@@ -14,7 +14,6 @@ const PORT = process.env.PORT || 3000;
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 app.use(bodyParser.json({ limit: '10mb' }));
 
-app.use('/muzik', express.static(path.join(__dirname, 'ses/muzik')));
 app.use('/karakterler', express.static(path.join(__dirname, '../oyun_projem/karakterler')));
 
 // Veritabanı Bağlantısı (Render çökmelerini önleyen güvenli mod)
@@ -293,9 +292,9 @@ app.get('/oyun-alani', (req, res) => {
 
             <div id="muzikPaneli">
                 <span id="sesIkona" style="cursor:pointer; font-size:18px;" onclick="toggleMuzik()" title="Sesi Aç/Kapat">🔊</span>
-                <button onclick="oynat('pixel-drift.mp3')">Pixel Drift</button>
-                <button onclick="oynat('asphalt-menace.mp3')">Asphalt Menace</button>
-                <button onclick="oynat('cybernetic-assault.mp3')">Cybernetic Assault</button>
+                <button onclick="oynat('https://upload.wikimedia.org/wikipedia/commons/b/b2/Beethoven_Moonlight_1st_movement.ogg')">Klasik</button>
+                <button onclick="oynat('https://upload.wikimedia.org/wikipedia/commons/d/d4/Mozart_Eine_kleine_Nachtmusik_1st_movement.ogg')">Nachtmusik</button>
+                <button onclick="oynat('https://upload.wikimedia.org/wikipedia/commons/e/e2/Vivaldi_The_Four_Seasons_-_Spring_mvt_1_-_John_Harrison_violin.ogg')">Vivaldi</button>
             </div>
 
             <div id="adminSifreModal">
@@ -327,7 +326,7 @@ app.get('/oyun-alani', (req, res) => {
             
             <script src="/socket.io/socket.io.js"></script>
             <script>
-                let muzik = window.muzik || new Audio(sessionStorage.getItem('muzikSrc') || '/muzik/pixel-drift.mp3');
+                let muzik = window.muzik || new Audio(sessionStorage.getItem('muzikSrc') || 'https://upload.wikimedia.org/wikipedia/commons/b/b2/Beethoven_Moonlight_1st_movement.ogg');
                 window.muzik = muzik;
                 muzik.loop = true;
                 muzik.volume = 0.4;
@@ -340,9 +339,9 @@ app.get('/oyun-alani', (req, res) => {
                 };
                 setInterval(() => sessionStorage.setItem('muzikTime', muzik.currentTime), 500);
 
-                function oynat(dosyaAdi) { 
-                    muzik.src = '/muzik/' + dosyaAdi; 
-                    sessionStorage.setItem('muzikSrc', '/muzik/' + dosyaAdi); 
+                function oynat(url) { 
+                    muzik.src = url; 
+                    sessionStorage.setItem('muzikSrc', url); 
                     muzik.play(); 
                     sessionStorage.setItem('muzikPlaying', 'true'); 
                     document.getElementById('sesIkona').innerText = '🔊';
