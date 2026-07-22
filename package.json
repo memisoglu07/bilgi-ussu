@@ -1,0 +1,13 @@
+{
+  "name": "bilgi-ussu",
+  "version": "1.0.0",
+  "main": "server.js",
+  "dependencies": {
+    "body-parser": "^2.3.0",
+    "chalk": "^4.1.2",
+    "express": "^4.22.2",
+    "multer": "^2.2.0",
+    "mysql2": "^3.23.1",
+    "socket.io": "^4.8.3"
+  }
+}
