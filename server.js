@@ -9,7 +9,6 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Bulut sunucuların atayacağı dinamik portu yakala (Render/Railway uyumlu)
 const PORT = process.env.PORT || 3000;
 
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
@@ -18,13 +17,21 @@ app.use(bodyParser.json({ limit: '10mb' }));
 app.use('/muzik', express.static(path.join(__dirname, 'ses/muzik')));
 app.use('/karakterler', express.static(path.join(__dirname, '../oyun_projem/karakterler')));
 
-// Veritabanı Bağlantısı (Render/Bulut Uyumlu)
+// Veritabanı Bağlantısı (Render çökmelerini önleyen güvenli mod)
 const db = mysql.createConnection({ 
     host: process.env.DB_HOST || '127.0.0.1', 
     port: process.env.DB_PORT || 8889, 
     user: process.env.DB_USER || 'root', 
     password: process.env.DB_PASSWORD || 'root', 
     database: process.env.DB_NAME || 'bilgi_ussu_proje' 
+});
+
+db.connect((err) => {
+    if (err) {
+        console.log("⚠️ Veritabanı bağlantısı kurulamadı (Lokal harici ortam), ancak sunucu çalışmaya devam ediyor.");
+    } else {
+        console.log("✅ Veritabanına başarıyla bağlanıldı!");
+    }
 });
 
 const layout = (content, title = "BİLGİ ÜSSÜ - BRAWL ARENA") => `
@@ -565,11 +572,9 @@ app.get('/oyun-alani', (req, res) => {
                     ctx.save();
                     ctx.translate(-kameraX, -kameraY);
 
-                    // Harita Arka Planı
                     ctx.fillStyle = '#1e1e1e';
                     ctx.fillRect(0, 0, ${HARITA_GENISLIK}, ${HARITA_YUKSEKLIK});
 
-                    // Bölgeleri Çiz
                     for (let b of oyunVerisi.bolgeler) {
                         ctx.fillStyle = b.renk;
                         ctx.fillRect(b.x, b.y, b.w, b.h);
@@ -584,7 +589,6 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.fillText("📍 " + b.isim, b.x + b.w / 2, b.y + 50);
                     }
 
-                    // Duvarları Çiz
                     for (let d of oyunVerisi.walls) {
                         ctx.fillStyle = '#2c3e50';
                         ctx.fillRect(d.x, d.y, d.w, d.h);
@@ -593,7 +597,6 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.strokeRect(d.x, d.y, d.w, d.h);
                     }
 
-                    // Sandıkları Çiz
                     for (let c of oyunVerisi.chests) {
                         if (!c.aktif) continue;
                         if (chestImg.complete && chestImg.naturalWidth !== 0) {
@@ -604,7 +607,6 @@ app.get('/oyun-alani', (req, res) => {
                         }
                     }
 
-                    // Mermileri Çiz
                     for (let m of oyunVerisi.bullets) {
                         ctx.fillStyle = '#ff4757';
                         ctx.beginPath();
@@ -614,7 +616,6 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.stroke();
                     }
 
-                    // Oyuncuları Çiz
                     for (let id in oyunVerisi.players) {
                         let p = oyunVerisi.players[id];
                         if (p.gizli && id !== benimId) continue;
