@@ -1,17 +1,17 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const path = require('path');
+const path = __dirname; // Sunucu dosyasının olduğu ana dizini baz alıyoruz
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Statik dosyaları public klasöründen sunuyoruz
-app.use(express.static(path.join(__dirname, 'public')));
+// Doğrudan ana proje klasörünü statik olarak sunuyoruz (index.html bu klasörde olmalı)
+app.use(express.static(path));
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path + '/index.html');
 });
 
 let players = {};
