@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- TÜM HARİTAYI KAPLAYAN BÖLGELER VE DUVARLAR ---
+// --- HARİTA VE DUVARLAR ---
 const HARITA_GENISLIK = 2000;
 const HARITA_YUKSEKLIK = 1500;
 
@@ -38,7 +38,6 @@ let chestler = [
     { id: 5, x: 1600, y: 1100, aktif: true }
 ];
 
-// Fen Bilimleri Konu / Ünite Havuzları
 const SORU_HAVUZU = {
     unite1: [
         { soru: "Güneş sistemindeki en büyük gezegen hangisidir?", secenekler: ["Dünya", "Jüpiter", "Mars", "Satürn"], cevap: 1 },
@@ -78,7 +77,7 @@ function rastgeleSpawnBul() {
     return { x, y };
 }
 
-// --- 1. GİRİŞ SAYFASI (İSİM + KONU SEÇİMİ) ---
+// --- 1. GİRİŞ SAYFASI ---
 app.get('/', (req, res) => {
     res.send(`
         <!DOCTYPE html><html><head><title>Giriş - Fen Arena</title><style>
@@ -118,7 +117,7 @@ app.get('/', (req, res) => {
     `);
 });
 
-// --- 2. SKİN TASARIM / YÜKLEME SAYFASI ---
+// --- 2. SKİN TASARIM SAYFASI ---
 app.get('/avatar-yap', (req, res) => {
     res.send(`
         <!DOCTYPE html><html><head><title>Skin Yaratıcı ve Yükleyici</title><style>
@@ -236,7 +235,7 @@ app.get('/avatar-yap', (req, res) => {
     `);
 });
 
-// --- 3. OYUN ALANI SAYFASI ---
+// --- 3. OPTİMİZE EDİLMİŞ OYUN ALANI SAYFASI ---
 app.get('/oyun-alani', (req, res) => {
     res.send(`
         <!DOCTYPE html><html><head><title>Fen Bilimleri Chest Arena</title><style>
@@ -376,6 +375,7 @@ app.get('/oyun-alani', (req, res) => {
                     socket.emit('atesEt', { x: tikX + kameraX, y: tikY + kameraY });
                 });
 
+                // Hareket Gönderim Optimizasyonu
                 setInterval(() => {
                     if (chatAcik || soruAcik) return;
                     let hareket = {x: 0, y: 0};
@@ -407,8 +407,6 @@ app.get('/oyun-alani', (req, res) => {
                             liste.appendChild(li);
                         });
                     }
-
-                    cizimYap(); 
                 });
 
                 socket.on('soruGoster', (veri) => {
@@ -450,6 +448,13 @@ app.get('/oyun-alani', (req, res) => {
                     if (chatGecmisi.children.length > 6) chatGecmisi.children[0].remove();
                     chatGecmisi.scrollTop = chatGecmisi.scrollHeight;
                 });
+
+                // --- Tarayıcı Kasmasını Önleyen requestAnimationFrame Döngüsü ---
+                function oyunDongusu() {
+                    cizimYap();
+                    requestAnimationFrame(oyunDongusu);
+                }
+                requestAnimationFrame(oyunDongusu);
 
                 function cizimYap() {
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -642,8 +647,6 @@ setInterval(() => {
                 let mesafe = Math.sqrt((p.x - c.x) ** 2 + (p.y - c.y) ** 2);
                 if (mesafe < 35) {
                     c.aktif = false;
-                    
-                    // Oyuncunun seçtiği konuya göre soru havuzundan soru çekme
                     let oyuncununKonusu = p.konu || 'unite1';
                     let havuz = SORU_HAVUZU[oyuncununKonusu] || SORU_HAVUZU.unite1;
                     let rastgeleSoru = havuz[Math.floor(Math.random() * havuz.length)];
