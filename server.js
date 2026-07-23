@@ -7,10 +7,9 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Statik dosyaları doğru yoldan (public klasöründen) sunmak için
+// Statik dosyaları public klasöründen sunuyoruz
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Ana dizine girildiğinde index.html'i garanti etmek için
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -19,6 +18,7 @@ let players = {};
 let matchTime = 300; // 5 dakika
 let isMatchActive = true;
 
+// Fen Bilimleri Soru Havuzu
 const questionsData = {
     "Güneş, Dünya ve Ay": [
         { question: "Dünya'nın tek doğal uydusu nedir?", options: ["Güneş", "Ay", "Mars", "Yıldız"], answer: "Ay" },
@@ -38,6 +38,7 @@ const questionsData = {
 
 let currentTopic = "Güneş, Dünya ve Ay";
 
+// Süre ve Maç Döngüsü
 setInterval(() => {
     if (isMatchActive) {
         matchTime--;
@@ -56,21 +57,22 @@ setInterval(() => {
 }, 1000);
 
 io.on('connection', (socket) => {
-    console.log('Bir oyuncu bağlandı:', socket.id);
+    console.log('Oyuncu bağlandı:', socket.id);
 
     players[socket.id] = {
         x: 100,
         y: 100,
         score: 0,
         skin: 'default',
-        isInvincible: false,
-        isNinjaStar: false,
+        isInvincible: false, // Görünmezlik hilesi
+        isNinjaStar: false,   // Ninja yıldızı mermi hilesi
         selectedTopic: currentTopic
     };
 
     socket.emit('timeUpdate', { matchTime, isMatchActive });
     socket.emit('setQuestions', { topic: currentTopic, questions: questionsData[currentTopic] });
 
+    // Skin Değiştirme
     socket.on('changeSkin', (skinName) => {
         if (players[socket.id]) {
             players[socket.id].skin = skinName;
@@ -78,6 +80,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Konu Seçimi
     socket.on('selectTopic', (topic) => {
         if (questionsData[topic]) {
             currentTopic = topic;
@@ -85,10 +88,11 @@ io.on('connection', (socket) => {
                 players[id].selectedTopic = topic;
             }
             io.emit('setQuestions', { topic: currentTopic, questions: questionsData[currentTopic] });
-            io.emit('chatMessage', { sender: 'Sistem', text: `Oyun Konusu Değişti: ${topic}` });
+            io.emit('chatMessage', { sender: 'Sistem', text: `Konu değiştirildi: ${topic}` });
         }
     });
 
+    // Oyuncu Hareketi
     socket.on('playerMove', (data) => {
         if (players[socket.id]) {
             players[socket.id].x = data.x;
@@ -96,6 +100,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Soru Cevaplama
     socket.on('submitAnswer', (data) => {
         if (players[socket.id] && isMatchActive) {
             const activeQuestions = questionsData[currentTopic];
@@ -112,6 +117,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Hile Paneli (Ninja Yıldızı, Görünmezlik, Kill Hilesi)
     socket.on('adminCheat', (cheatData) => {
         if (players[socket.id]) {
             if (cheatData.type === 'ninjaStar') {
@@ -124,12 +130,13 @@ io.on('connection', (socket) => {
                         players[id].score = 0;
                     }
                 }
-                io.emit('chatMessage', { sender: 'Sistem', text: 'Bir oyuncu hile ile skorları sıfırladı!' });
+                io.emit('chatMessage', { sender: 'Sistem', text: 'Bir oyuncu hile ile ortalığı temizledi!' });
             }
             io.emit('updatePlayers', players);
         }
     });
 
+    // Chat Mesajları
     socket.on('chatMessage', (data) => {
         io.emit('chatMessage', { sender: players[socket.id]?.skin || 'Oyuncu', text: data.text });
     });
