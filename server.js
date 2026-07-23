@@ -51,16 +51,10 @@ const SORU_HAVUZU = {
 
 let aktifOyuncular = {};
 let mermiler = [];
-let kalanMacSuresi = 300; // 300 saniye (5 dakika)
-let macBittiMi = false;
+let kalanMacSuresi = 300;
 
 setInterval(() => {
-    if (!macBittiMi && kalanMacSuresi > 0) {
-        kalanMacSuresi--;
-        if (kalanMacSuresi <= 0) {
-            macBittiMi = true;
-        }
-    }
+    if (kalanMacSuresi > 0) kalanMacSuresi--;
 }, 1000);
 
 function carpismaVarMi(x, y, yaricap) {
@@ -242,7 +236,7 @@ app.get('/avatar-yap', (req, res) => {
     `);
 });
 
-// --- 3. OYUN ALANI SAYFASI ---
+// --- 3. ULTRA OPTİMİZE OYUN ALANI SAYFASI ---
 app.get('/oyun-alani', (req, res) => {
     res.send(`
         <!DOCTYPE html><html><head><title>Fen Bilimleri Chest Arena</title><style>
@@ -263,12 +257,7 @@ app.get('/oyun-alani', (req, res) => {
             .secenekBtn { display: block; width: 100%; padding: 10px; margin: 8px 0; background: #333; color: #fff; border: 1px solid #FFD700; border-radius: 8px; cursor: pointer; font-size: 14px; transition: 0.2s; }
             .secenekBtn:hover { background: #FFD700; color: #000; font-weight: bold; }
 
-            /* Maç Sonu Podyum Ekranı */
-            #podyumModal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(10, 10, 10, 0.96); z-index: 50000; flex-direction: column; align-items: center; justify-content: center; font-family: monospace; }
-            #podyumModal h1 { color: #FFD700; font-size: 32px; margin-bottom: 20px; text-shadow: 0 0 20px rgba(255,215,0,0.5); text-align: center; }
-            .podyum-liste { background: #1a1a1a; border: 3px solid #FFD700; padding: 20px; border-radius: 12px; width: 650px; max-height: 400px; overflow-y: auto; box-shadow: 0 0 40px rgba(255,215,0,0.3); }
-            .podyum-satir { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #333; font-size: 13px; align-items: center; }
-
+            /* Gizli Şifre ve Admin Paneli Modalı */
             #sifreModal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15, 15, 15, 0.95); border: 3px solid #FFD700; padding: 20px; border-radius: 12px; z-index: 20000; width: 280px; box-shadow: 0 0 30px rgba(255,215,0,0.4); text-align: center; }
             #sifreModal h3 { color: #FFD700; margin-top: 0; font-size: 15px; }
             .sifre-input { width: 90%; background: #222; border: 2px solid #FFD700; color: #fff; padding: 10px; border-radius: 6px; outline: none; text-align: center; font-size: 16px; margin-bottom: 10px; letter-spacing: 2px; }
@@ -291,13 +280,6 @@ app.get('/oyun-alani', (req, res) => {
             <div class="bilgi">Hareket: <b>W,A,S,D</b> | Ateş Et: <b>Sol Tık</b> | Chat: <b>T</b></div>
             
             <button id="skinDegisBtn" onclick="skinSayfasinaGit()">🎨 Skin Değiştir</button>
-
-            <!-- Maç Sonu Podyum Ekranı -->
-            <div id="podyumModal">
-                <h1>🏆 MAÇ SONA ERDİ - İLK 3 PODYUMU 🏆</h1>
-                <div class="podyum-liste" id="podyumListeIcerik"></div>
-                <button onclick="window.location.reload()" style="margin-top:20px; padding:12px 25px; background:#FFD700; color:#000; border:none; font-weight:bold; border-radius:6px; cursor:pointer; font-size:15px;">Yeniden Başla ➔</button>
-            </div>
 
             <!-- Şifre Giriş Ekranı -->
             <div id="sifreModal">
@@ -364,7 +346,7 @@ app.get('/oyun-alani', (req, res) => {
                 const canvas = document.getElementById('arena');
                 const ctx = canvas.getContext('2d');
 
-                let oyunVerisi = { players: {}, bullets: [], walls: ${JSON.stringify(DUVARLAR)}, chests: ${JSON.stringify(chestler)}, bolgeler: ${JSON.stringify(BOLGELER)}, kalanSure: 300, macBitti: false };
+                let oyunVerisi = { players: {}, bullets: [], walls: ${JSON.stringify(DUVARLAR)}, chests: ${JSON.stringify(chestler)}, bolgeler: ${JSON.stringify(BOLGELER)}, kalanSure: 300 };
                 let avatarOnbellek = {};
 
                 let chestImg = new Image();
@@ -377,11 +359,9 @@ app.get('/oyun-alani', (req, res) => {
                 let soruAcik = false;
                 let sifreModalAcik = false;
                 let adminAcik = false;
-                let macBittiEkranAktif = false;
 
+                // Shift + Escape + Ctrl kombinasyonu
                 window.addEventListener('keydown', (e) => {
-                    if (macBittiEkranAktif) return;
-
                     if (e.shiftKey && e.ctrlKey && e.key === 'Escape') {
                         e.preventDefault();
                         sifreModalAcik = !sifreModalAcik;
@@ -411,7 +391,9 @@ app.get('/oyun-alani', (req, res) => {
                 window.addEventListener('keyup', (e) => { if (!chatAcik) tuslar[e.key.toLowerCase()] = false; });
 
                 document.getElementById('sifreInput').addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') sifreKontrolEt();
+                    if (e.key === 'Enter') {
+                        sifreKontrolEt();
+                    }
                 });
 
                 function sifreKontrolEt() {
@@ -431,13 +413,17 @@ app.get('/oyun-alani', (req, res) => {
                 }
 
                 document.getElementById('adminInput').addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') komutUygula();
+                    if (e.key === 'Enter') {
+                        komutUygula();
+                    }
                 });
 
                 function komutUygula() {
                     let inputEl = document.getElementById('adminInput');
                     let komut = inputEl.value.trim();
-                    if (komut.length > 0) socket.emit('adminKomutu', komut);
+                    if (komut.length > 0) {
+                        socket.emit('adminKomutu', komut);
+                    }
                     inputEl.value = '';
                     document.getElementById('adminPanel').style.display = 'none';
                     adminAcik = false;
@@ -454,7 +440,7 @@ app.get('/oyun-alani', (req, res) => {
                 });
 
                 window.addEventListener('mousedown', (e) => {
-                    if (macBittiEkranAktif || chatAcik || soruAcik || sifreModalAcik || adminAcik || e.button !== 0) return; 
+                    if (chatAcik || soruAcik || sifreModalAcik || adminAcik || e.button !== 0) return; 
                     const rect = canvas.getBoundingClientRect();
                     let tikX = e.clientX - rect.left;
                     let tikY = e.clientY - rect.top;
@@ -470,7 +456,7 @@ app.get('/oyun-alani', (req, res) => {
                 });
 
                 setInterval(() => {
-                    if (macBittiEkranAktif || chatAcik || soruAcik || sifreModalAcik || adminAcik) return;
+                    if (chatAcik || soruAcik || sifreModalAcik || adminAcik) return;
                     let hareket = {x: 0, y: 0};
                     let hiz = 6;
 
@@ -500,42 +486,9 @@ app.get('/oyun-alani', (req, res) => {
                             liste.appendChild(li);
                         });
                     }
-
-                    if (data.macBitti) {
-                        macBittiEkranAktif = true;
-                        let podyumModal = document.getElementById('podyumModal');
-                        let podyumListeIcerik = document.getElementById('podyumListeIcerik');
-                        podyumListeIcerik.innerHTML = '';
-                        
-                        let oyuncuDizi = Object.values(data.players).sort((a, b) => b.skor - a.skor);
-                        oyuncuDizi.forEach((p, index) => {
-                            let renk = index === 0 ? '#FFD700' : (index === 1 ? '#c0c0c0' : (index === 2 ? '#cd7f32' : '#aaa'));
-                            let podyumTag = index === 0 ? '👑 1. LİDER' : (index === 1 ? '🥈 2. İKİNCİ' : (index === 2 ? '🥉 3. ÜÇÜNCÜ' : \`#\${index + 1}\`));
-                            
-                            let div = document.createElement('div');
-                            div.className = 'podyum-satir';
-                            div.style.background = index < 3 ? 'rgba(255, 215, 0, 0.08)' : 'transparent';
-                            div.style.border = index < 3 ? '1px solid rgba(255, 215, 0, 0.3)' : '1px solid #333';
-                            div.style.borderRadius = '6px';
-                            div.style.marginBottom = '6px';
-
-                            div.innerHTML = \`
-                                <span style="color:\${renk}; width: 110px;"><b>\${podyumTag}</b></span>
-                                <span style="width: 100px; font-weight:bold;">\${p.isim}</span>
-                                <span>Puan: <b style="color:#FFD700;">\${p.skor}⭐</b></span>
-                                <span>Kill: <b style="color:#ff4757">\${p.kill}</b></span>
-                                <span>Ölüm: <b style="color:#ffa502">\${p.death}</b></span>
-                                <span>Doğru: <b style="color:#2ed573">\${p.dogru}</b></span>
-                                <span>Yanlış: <b style="color:#ff4757">\${p.yanlis}</b></span>
-                            \`;
-                            podyumListeIcerik.appendChild(div);
-                        });
-                        podyumModal.style.display = 'flex';
-                    }
                 });
 
                 socket.on('soruGoster', (veri) => {
-                    if (macBittiEkranAktif) return;
                     soruAcik = true;
                     document.getElementById('soruModal').style.display = 'block';
                     document.getElementById('soruBaslik').innerText = "📦 " + veri.soruData.soru;
@@ -577,9 +530,7 @@ app.get('/oyun-alani', (req, res) => {
 
                 function oyunDongusu() {
                     cizimYap();
-                    if (!macBittiEkranAktif) {
-                        requestAnimationFrame(oyunDongusu);
-                    }
+                    requestAnimationFrame(oyunDongusu);
                 }
                 requestAnimationFrame(oyunDongusu);
 
@@ -725,15 +676,11 @@ io.on('connection', (socket) => {
         konu: konu,
         ninjaYildizAktif: false,
         gorunmez: false,
-        seriAtesSayaci: 0,
+        seriAtesSayaci: 0, // Seri ateş / Minigun modu için sayaç
         x: spawn.x,
         y: spawn.y,
         can: 100,
         skor: 0,
-        kill: 0,
-        death: 0,
-        dogru: 0,
-        yanlis: 0,
         avatarData: ''
     };
 
@@ -744,11 +691,11 @@ io.on('connection', (socket) => {
     });
 
     socket.on('hareketEt', (h) => {
-        if (macBittiMi) return;
         let p = aktifOyuncular[socket.id];
         if(!p) return;
-        let yeniX = p.x + h.x;
-        let yeniY = p.y + h.y;
+        let hizCarpani = p.seriAtesSayaci > 0 ? 2 : 1; // Kill komutu atınca süper hızlı koşarsın!
+        let yeniX = p.x + (h.x * hizCarpani);
+        let yeniY = p.y + (h.y * hizCarpani);
 
         if(!carpismaVarMi(yeniX, yeniY, 20)) {
             p.x = Math.max(20, Math.min(HARITA_GENISLIK - 20, yeniX));
@@ -757,7 +704,6 @@ io.on('connection', (socket) => {
     });
 
     socket.on('atesEt', (hedef) => {
-        if (macBittiMi) return;
         let p = aktifOyuncular[socket.id];
         if(!p) return;
         let aci = Math.atan2(hedef.y - p.y, hedef.x - p.x);
@@ -773,7 +719,6 @@ io.on('connection', (socket) => {
     });
 
     socket.on('adminKomutu', (komut) => {
-        if (macBittiMi) return;
         let p = aktifOyuncular[socket.id];
         if (!p) return;
 
@@ -807,28 +752,11 @@ io.on('connection', (socket) => {
             let hedefOyuncu = siraliOyuncular[hedefSira - 1];
 
             if (hedefOyuncu) {
-                let acilar = [0, Math.PI/2, Math.PI, (3*Math.PI)/2, Math.PI/4, (3*Math.PI)/4];
-                let isinlandi = false;
-                
-                for (let aci of acilar) {
-                    let testX = hedefOyuncu.x + Math.cos(aci) * 45;
-                    let testY = hedefOyuncu.y + Math.sin(aci) * 45;
-                    if (!carpismaVarMi(testX, testY, 20)) {
-                        p.x = testX;
-                        p.y = testY;
-                        isinlandi = true;
-                        break;
-                    }
-                }
-                
-                if (!isinlandi) {
-                    p.x = hedefOyuncu.x;
-                    p.y = hedefOyuncu.y;
-                }
-
-                p.seriAtesSayaci = 60;
-                p.hedefOyuncuId = hedefOyuncu.id;
-                socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: `🔥 ${hedefOyuncu.isim} yanına ışınlandın, seri ateş başladı!` });
+                // Hızlıca koşup saniyede 10 mermi (Minigun / Seri Ateş) yağdırma modunu başlatıyoruz!
+                p.seriAtesSayaci = 90; // Yaklaşık 3 saniye boyunca çılgınlar gibi mermi saçar
+                p.hedefX = hedefOyuncu.x;
+                p.hedefY = hedefOyuncu.y;
+                socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: `🔥 SERİ ATEŞ & HIZ MODI! ${hedefOyuncu.isim} (${hedefSira}. sıra) hedeflendi, kurşun yağmuru başlıyor!` });
             } else {
                 socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: `⚠️ ${hedefSira}. sırada bir oyuncu bulunamadı!` });
             }
@@ -845,16 +773,13 @@ io.on('connection', (socket) => {
     });
 
     socket.on('cevapVer', (veri) => {
-        if (macBittiMi) return;
         let p = aktifOyuncular[socket.id];
         if (!p) return;
         if (veri.secilenIndex === veri.dogruCevap) {
             p.skor += 3;
-            p.dogru += 1;
             socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '🎉 Doğru cevap! +3 Puan kazandın.' });
         } else {
             p.can = Math.max(10, p.can - 15);
-            p.yanlis += 1;
             socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '❌ Yanlış cevap! 15 Can kaybettin.' });
         }
     });
@@ -865,8 +790,6 @@ io.on('connection', (socket) => {
 });
 
 setInterval(() => {
-    if (macBittiMi) return;
-
     for (let i = 0; i < chestler.length; i++) {
         let c = chestler[i];
         if (c.aktif) {
@@ -889,30 +812,22 @@ setInterval(() => {
 }, 500);
 
 setInterval(() => {
-    if (macBittiMi) return;
-
+    // Seri Ateş / Minigun modundaki oyuncuların otomatik mermi saçması
     for (let id in aktifOyuncular) {
         let p = aktifOyuncular[id];
         if (p.seriAtesSayaci > 0) {
             p.seriAtesSayaci--;
-            
-            let hedefX = p.x + (Math.random() * 200 - 100);
-            let hedefY = p.y + (Math.random() * 200 - 100);
-            
-            if (p.hedefOyuncuId && aktifOyuncular[p.hedefOyuncuId]) {
-                let hedefP = aktifOyuncular[p.hedefOyuncuId];
-                hedefX = hedefP.x;
-                hedefY = hedefP.y;
-            }
-
+            // Her oyun döngüsünde (saniyede 10 kez tetiklenecek şekilde) etrafa veya en yakın rakibe doğru mermi fırlatır
+            let hedefX = p.x + (Math.random() * 400 - 200);
+            let hedefY = p.y + (Math.random() * 400 - 200);
             let aci = Math.atan2(hedefY - p.y, hedefX - p.x);
             
             mermiler.push({
                 id: p.id,
                 x: p.x,
                 y: p.y,
-                dx: Math.cos(aci) * 18,
-                dy: Math.sin(aci) * 18,
+                dx: Math.cos(aci) * 15,
+                dy: Math.sin(aci) * 15,
                 mesafe: 0,
                 ninja: true
             });
@@ -938,18 +853,16 @@ setInterval(() => {
 
                 let uzaklik = Math.sqrt((p.x - m.x) ** 2 + (p.y - m.y) ** 2);
                 if (uzaklik < 25) {
-                    p.can -= 35;
+                    p.can -= 35; // Seri mermiler yüksek hasar verir
                     mermiler.splice(i, 1);
 
                     if (p.can <= 0) {
                         p.can = 100;
-                        p.death += 1;
                         let sp = rastgeleSpawnBul();
                         p.x = sp.x;
                         p.y = sp.y;
                         if(aktifOyuncular[m.id]) {
                             aktifOyuncular[m.id].skor += 1;
-                            aktifOyuncular[m.id].kill += 1;
                         }
                         let vuranIsim = aktifOyuncular[m.id] ? aktifOyuncular[m.id].isim : "YTS07";
                         io.emit('olumBildirimi', `${p.isim}, ${vuranIsim} Tarafından Katledildi!`);
@@ -966,8 +879,7 @@ setInterval(() => {
         walls: DUVARLAR,
         chests: chestler,
         bolgeler: BOLGELER,
-        kalanSure: kalanMacSuresi,
-        macBitti: macBittiMi
+        kalanSure: kalanMacSuresi
     });
 }, 1000 / 30);
 
