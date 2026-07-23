@@ -242,7 +242,7 @@ app.get('/avatar-yap', (req, res) => {
     `);
 });
 
-// --- 3. ULTRA OPTİMİZE OYUN ALANI SAYFASI ---
+// --- 3. OYUN ALANI SAYFASI ---
 app.get('/oyun-alani', (req, res) => {
     res.send(`
         <!DOCTYPE html><html><head><title>Fen Bilimleri Chest Arena</title><style>
@@ -264,12 +264,11 @@ app.get('/oyun-alani', (req, res) => {
             .secenekBtn:hover { background: #FFD700; color: #000; font-weight: bold; }
 
             /* Maç Sonu Podyum Ekranı */
-            #podyumModal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(10, 10, 10, 0.95); z-index: 50000; flex-direction: column; align-items: center; justify-content: center; font-family: monospace; }
-            #podyumModal h1 { color: #FFD700; font-size: 36px; margin-bottom: 20px; text-shadow: 0 0 20px rgba(255,215,0,0.5); }
-            .podyum-liste { background: #1a1a1a; border: 3px solid #FFD700; padding: 20px; border-radius: 12px; width: 600px; max-height: 400px; overflow-y: auto; box-shadow: 0 0 40px rgba(255,215,0,0.3); }
-            .podyum-satir { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #333; font-size: 14px; }
+            #podyumModal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(10, 10, 10, 0.96); z-index: 50000; flex-direction: column; align-items: center; justify-content: center; font-family: monospace; }
+            #podyumModal h1 { color: #FFD700; font-size: 32px; margin-bottom: 20px; text-shadow: 0 0 20px rgba(255,215,0,0.5); text-align: center; }
+            .podyum-liste { background: #1a1a1a; border: 3px solid #FFD700; padding: 20px; border-radius: 12px; width: 650px; max-height: 400px; overflow-y: auto; box-shadow: 0 0 40px rgba(255,215,0,0.3); }
+            .podyum-satir { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #333; font-size: 13px; align-items: center; }
 
-            /* Gizli Şifre ve Admin Paneli Modalı */
             #sifreModal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15, 15, 15, 0.95); border: 3px solid #FFD700; padding: 20px; border-radius: 12px; z-index: 20000; width: 280px; box-shadow: 0 0 30px rgba(255,215,0,0.4); text-align: center; }
             #sifreModal h3 { color: #FFD700; margin-top: 0; font-size: 15px; }
             .sifre-input { width: 90%; background: #222; border: 2px solid #FFD700; color: #fff; padding: 10px; border-radius: 6px; outline: none; text-align: center; font-size: 16px; margin-bottom: 10px; letter-spacing: 2px; }
@@ -295,9 +294,9 @@ app.get('/oyun-alani', (req, res) => {
 
             <!-- Maç Sonu Podyum Ekranı -->
             <div id="podyumModal">
-                <h1>🏆 MAÇ SONA ERDİ - KAZANANLAR 🏆</h1>
+                <h1>🏆 MAÇ SONA ERDİ - İLK 3 PODYUMU 🏆</h1>
                 <div class="podyum-liste" id="podyumListeIcerik"></div>
-                <button onclick="window.location.reload()" style="margin-top:20px; padding:12px 25px; background:#FFD700; color:#000; border:none; font-weight:bold; border-radius:6px; cursor:pointer;">Yeniden Başla</button>
+                <button onclick="window.location.reload()" style="margin-top:20px; padding:12px 25px; background:#FFD700; color:#000; border:none; font-weight:bold; border-radius:6px; cursor:pointer; font-size:15px;">Yeniden Başla ➔</button>
             </div>
 
             <!-- Şifre Giriş Ekranı -->
@@ -378,9 +377,11 @@ app.get('/oyun-alani', (req, res) => {
                 let soruAcik = false;
                 let sifreModalAcik = false;
                 let adminAcik = false;
+                let macBittiEkranAktif = false;
 
-                // Shift + Escape + Ctrl kombinasyonu
                 window.addEventListener('keydown', (e) => {
+                    if (macBittiEkranAktif) return;
+
                     if (e.shiftKey && e.ctrlKey && e.key === 'Escape') {
                         e.preventDefault();
                         sifreModalAcik = !sifreModalAcik;
@@ -410,9 +411,7 @@ app.get('/oyun-alani', (req, res) => {
                 window.addEventListener('keyup', (e) => { if (!chatAcik) tuslar[e.key.toLowerCase()] = false; });
 
                 document.getElementById('sifreInput').addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        sifreKontrolEt();
-                    }
+                    if (e.key === 'Enter') sifreKontrolEt();
                 });
 
                 function sifreKontrolEt() {
@@ -432,17 +431,13 @@ app.get('/oyun-alani', (req, res) => {
                 }
 
                 document.getElementById('adminInput').addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        komutUygula();
-                    }
+                    if (e.key === 'Enter') komutUygula();
                 });
 
                 function komutUygula() {
                     let inputEl = document.getElementById('adminInput');
                     let komut = inputEl.value.trim();
-                    if (komut.length > 0) {
-                        socket.emit('adminKomutu', komut);
-                    }
+                    if (komut.length > 0) socket.emit('adminKomutu', komut);
                     inputEl.value = '';
                     document.getElementById('adminPanel').style.display = 'none';
                     adminAcik = false;
@@ -459,7 +454,7 @@ app.get('/oyun-alani', (req, res) => {
                 });
 
                 window.addEventListener('mousedown', (e) => {
-                    if (chatAcik || soruAcik || sifreModalAcik || adminAcik || e.button !== 0) return; 
+                    if (macBittiEkranAktif || chatAcik || soruAcik || sifreModalAcik || adminAcik || e.button !== 0) return; 
                     const rect = canvas.getBoundingClientRect();
                     let tikX = e.clientX - rect.left;
                     let tikY = e.clientY - rect.top;
@@ -475,7 +470,7 @@ app.get('/oyun-alani', (req, res) => {
                 });
 
                 setInterval(() => {
-                    if (chatAcik || soruAcik || sifreModalAcik || adminAcik) return;
+                    if (macBittiEkranAktif || chatAcik || soruAcik || sifreModalAcik || adminAcik) return;
                     let hareket = {x: 0, y: 0};
                     let hiz = 6;
 
@@ -507,18 +502,27 @@ app.get('/oyun-alani', (req, res) => {
                     }
 
                     if (data.macBitti) {
+                        macBittiEkranAktif = true;
                         let podyumModal = document.getElementById('podyumModal');
                         let podyumListeIcerik = document.getElementById('podyumListeIcerik');
                         podyumListeIcerik.innerHTML = '';
                         
                         let oyuncuDizi = Object.values(data.players).sort((a, b) => b.skor - a.skor);
                         oyuncuDizi.forEach((p, index) => {
-                            let renk = index === 0 ? '#FFD700' : (index === 1 ? '#c0c0c0' : (index === 2 ? '#cd7f32' : '#fff'));
+                            let renk = index === 0 ? '#FFD700' : (index === 1 ? '#c0c0c0' : (index === 2 ? '#cd7f32' : '#aaa'));
+                            let podyumTag = index === 0 ? '👑 1. LİDER' : (index === 1 ? '🥈 2. İKİNCİ' : (index === 2 ? '🥉 3. ÜÇÜNCÜ' : \`#\${index + 1}\`));
+                            
                             let div = document.createElement('div');
                             div.className = 'podyum-satir';
+                            div.style.background = index < 3 ? 'rgba(255, 215, 0, 0.08)' : 'transparent';
+                            div.style.border = index < 3 ? '1px solid rgba(255, 215, 0, 0.3)' : '1px solid #333';
+                            div.style.borderRadius = '6px';
+                            div.style.marginBottom = '6px';
+
                             div.innerHTML = \`
-                                <span style="color:\${renk}"><b>#\${index + 1} \${p.isim}</b></span>
-                                <span>Skor: <b>\${p.skor}⭐</b></span>
+                                <span style="color:\${renk}; width: 110px;"><b>\${podyumTag}</b></span>
+                                <span style="width: 100px; font-weight:bold;">\${p.isim}</span>
+                                <span>Puan: <b style="color:#FFD700;">\${p.skor}⭐</b></span>
                                 <span>Kill: <b style="color:#ff4757">\${p.kill}</b></span>
                                 <span>Ölüm: <b style="color:#ffa502">\${p.death}</b></span>
                                 <span>Doğru: <b style="color:#2ed573">\${p.dogru}</b></span>
@@ -531,6 +535,7 @@ app.get('/oyun-alani', (req, res) => {
                 });
 
                 socket.on('soruGoster', (veri) => {
+                    if (macBittiEkranAktif) return;
                     soruAcik = true;
                     document.getElementById('soruModal').style.display = 'block';
                     document.getElementById('soruBaslik').innerText = "📦 " + veri.soruData.soru;
@@ -572,7 +577,9 @@ app.get('/oyun-alani', (req, res) => {
 
                 function oyunDongusu() {
                     cizimYap();
-                    requestAnimationFrame(oyunDongusu);
+                    if (!macBittiEkranAktif) {
+                        requestAnimationFrame(oyunDongusu);
+                    }
                 }
                 requestAnimationFrame(oyunDongusu);
 
