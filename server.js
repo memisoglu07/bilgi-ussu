@@ -7,12 +7,12 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Statik dosyaları sunma
+// Statik dosyaları sunma (public klasörü varsayılmıştır, progene göre değiştirebilirsin)
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Oyun ve Maç Durumları
 let matchState = {
-    timeRemaining: 300, // 5 dakika (saniye)
+    timeRemaining: 300, // 5 dakika (saniye cinsinden)
     isGameActive: true,
     timerInterval: null
 };
@@ -63,9 +63,8 @@ io.on('connection', (socket) => {
         players: players
     });
 
-    // Oyuncu yeniden başlatma isteği gönderirse (Örn: Admin veya Buton ile)
+    // Oyuncu yeniden başlatma isteği gönderirse
     socket.on('restartMatch', () => {
-        // Maçı sıfırla ve yeniden başlat
         startMatchTimer();
         io.emit('matchRestarted', {
             timeRemaining: matchState.timeRemaining,
@@ -79,6 +78,11 @@ io.on('connection', (socket) => {
         delete players[socket.id];
         io.emit('playerDisconnected', socket.id);
     });
+});
+
+// "Cannot GET" hatalarını önlemek için tüm yönlendirmeleri ana HTML dosyasına bağla
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Sunucu ilk açıldığında maçı başlat
