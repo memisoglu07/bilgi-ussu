@@ -1,41 +1,43 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Statik dosyaları sunmak için public klasörü
-app.use(express.static('public'));
+// Statik dosyaları doğru yoldan (public klasöründen) sunmak için
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Ana dizine girildiğinde index.html'i garanti etmek için
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 let players = {};
-let matchTime = 300; // 5 dakika (saniye cinsinden)
+let matchTime = 300; // 5 dakika
 let isMatchActive = true;
 
-// Fen Bilimleri Konuları ve Genişletilmiş Soru Bankaları (Her biri 50'şer soru hedefli örnek yapı)
 const questionsData = {
     "Güneş, Dünya ve Ay": [
         { question: "Dünya'nın tek doğal uydusu nedir?", options: ["Güneş", "Ay", "Mars", "Yıldız"], answer: "Ay" },
         { question: "Güneş, Dünya'ya en yakın...?", options: ["Gezegendir", "Yıldızdır", "Uydudur", "Galaksidir"], answer: "Yıldızdır" },
         { question: "Ay'ın ana evrelerinin tamamlanma süresi yaklaşık ne kadardır?", options: ["1 gün", "1 hafta", "1 ay", "1 yıl"], answer: "1 ay" },
         { question: "Güneş'in şekli hangi geometrik cisme benzetilir?", options: ["Küre", "Küp", "Silindir", "Koni"], answer: "Küre" },
-        { question: "Dünya kendi ekseni etrafında hangi yöne döner?", options: ["Doğudan batıya", "Batıdan doğuya", "Kuzeyden güneşe", "Güneyden kuzeye"], answer: "Batıdan doğuya" },
-        // ... (Bu kategori altındaki soru sayısı 50'ye tamamlanmıştır)
+        { question: "Dünya kendi ekseni etrafında hangi yöne döner?", options: ["Doğudan batıya", "Batıdan doğuya", "Kuzeyden güneşe", "Güneyden kuzeye"], answer: "Batıdan doğuya" }
     ],
     "Kuvvetin Etkileri": [
         { question: "Duran bir cismi harekete geçiren etkiye ne denir?", options: ["Kuvvet", "Enerji", "Hız", "Sürtünme"], answer: "Kuvvet" },
         { question: "Mıknatısların aynı kutupları birbirini ne yapar?", options: ["Çeker", "İter", "Etkilemez", "Yakar"], answer: "İter" },
         { question: "Hangi cisimlere kuvvet uygulandığında şekil değiştirdikten sonra eski haline döner?", options: ["Esnek", "Sert", "Kırılgan", "Pürüzlü"], answer: "Esnek" },
         { question: "Temas gerektiren kuvvet hangisidir?", options: ["Yerçekimi", "Manyetik kuvvet", "İtme kuvveti", "Elektriksel kuvvet"], answer: "İtme kuvveti" },
-        { question: "Mıknatıslar hangi maddeleri çekmez?", options: ["Demir", "Nikel", "Kobalt", "Tahta"], answer: "Tahta" },
-        // ... (Bu kategori altındaki soru sayısı 50'ye tamamlanmıştır)
+        { question: "Mıknatıslar hangi maddeleri çekmez?", options: ["Demir", "Nikel", "Kobalt", "Tahta"], answer: "Tahta" }
     ]
 };
 
-let currentTopic = "Güneş, Dünya ve Ay"; // Varsayılan konu
+let currentTopic = "Güneş, Dünya ve Ay";
 
-// Maç süresi ve otomatik yeniden başlatma döngüsü
 setInterval(() => {
     if (isMatchActive) {
         matchTime--;
@@ -56,21 +58,19 @@ setInterval(() => {
 io.on('connection', (socket) => {
     console.log('Bir oyuncu bağlandı:', socket.id);
 
-    // Yeni oyuncu başlangıç verileri (Skin, skor ve hile durumları dahil)
     players[socket.id] = {
         x: 100,
         y: 100,
         score: 0,
         skin: 'default',
-        isInvincible: false, 
-        isNinjaStar: false,   
+        isInvincible: false,
+        isNinjaStar: false,
         selectedTopic: currentTopic
     };
 
     socket.emit('timeUpdate', { matchTime, isMatchActive });
     socket.emit('setQuestions', { topic: currentTopic, questions: questionsData[currentTopic] });
 
-    // Skin değiştirme isteği
     socket.on('changeSkin', (skinName) => {
         if (players[socket.id]) {
             players[socket.id].skin = skinName;
@@ -78,7 +78,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Konu seçimi güncellemesi
     socket.on('selectTopic', (topic) => {
         if (questionsData[topic]) {
             currentTopic = topic;
@@ -90,7 +89,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Oyuncu hareketleri
     socket.on('playerMove', (data) => {
         if (players[socket.id]) {
             players[socket.id].x = data.x;
@@ -98,7 +96,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Soru cevaplama mekanizması
     socket.on('submitAnswer', (data) => {
         if (players[socket.id] && isMatchActive) {
             const activeQuestions = questionsData[currentTopic];
@@ -115,7 +112,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Hile Paneli Komutları (Ninja Yıldızı, Görünmezlik, Kill Hilesi)
     socket.on('adminCheat', (cheatData) => {
         if (players[socket.id]) {
             if (cheatData.type === 'ninjaStar') {
@@ -134,12 +130,10 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Chat mesajları yönetimi
     socket.on('chatMessage', (data) => {
         io.emit('chatMessage', { sender: players[socket.id]?.skin || 'Oyuncu', text: data.text });
     });
 
-    // Bağlantı kopması
     socket.on('disconnect', () => {
         console.log('Oyuncu ayrıldı:', socket.id);
         delete players[socket.id];
