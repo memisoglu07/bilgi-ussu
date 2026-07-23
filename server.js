@@ -579,10 +579,12 @@ app.get('/oyun-alani', (req, res) => {
                         }
                     }
 
+                    // Mermiler ve Ninja Yıldızları Çizimi
                     for(let m of oyunVerisi.bullets) {
                         ctx.save();
                         ctx.translate(m.x, m.y);
                         if (m.ninja) {
+                            // Fırıl fırıl dönen Ninja Yıldızı (Shuriken)
                             ctx.rotate(Date.now() / 100);
                             ctx.fillStyle = '#2ed573';
                             ctx.strokeStyle = '#fff';
@@ -598,6 +600,7 @@ app.get('/oyun-alani', (req, res) => {
                                 ctx.rotate(Math.PI / 2);
                             }
                         } else {
+                            // Normal Mermi
                             ctx.fillStyle = '#ff4757';
                             ctx.beginPath();
                             ctx.arc(0, 0, 6, 0, Math.PI * 2);
@@ -609,6 +612,7 @@ app.get('/oyun-alani', (req, res) => {
                     for(let id in oyunVerisi.players) {
                         let p = oyunVerisi.players[id];
                         
+                        // Görünmezlik kontrolü
                         if (p.gorunmez && id !== benimId) continue;
 
                         ctx.save();
@@ -676,7 +680,6 @@ io.on('connection', (socket) => {
         konu: konu,
         ninjaYildizAktif: false,
         gorunmez: false,
-        seriAtesSayaci: 0, // Seri ateş / Minigun modu için sayaç
         x: spawn.x,
         y: spawn.y,
         can: 100,
@@ -693,9 +696,8 @@ io.on('connection', (socket) => {
     socket.on('hareketEt', (h) => {
         let p = aktifOyuncular[socket.id];
         if(!p) return;
-        let hizCarpani = p.seriAtesSayaci > 0 ? 2 : 1; // Kill komutu atınca süper hızlı koşarsın!
-        let yeniX = p.x + (h.x * hizCarpani);
-        let yeniY = p.y + (h.y * hizCarpani);
+        let yeniX = p.x + h.x;
+        let yeniY = p.y + h.y;
 
         if(!carpismaVarMi(yeniX, yeniY, 20)) {
             p.x = Math.max(20, Math.min(HARITA_GENISLIK - 20, yeniX));
@@ -711,8 +713,8 @@ io.on('connection', (socket) => {
             id: socket.id,
             x: p.x,
             y: p.y,
-            dx: Math.cos(aci) * 12,
-            dy: Math.sin(aci) * 12,
+            dx: Math.cos(aci) * 10,
+            dy: Math.sin(aci) * 10,
             mesafe: 0,
             ninja: p.ninjaYildizAktif
         });
@@ -752,11 +754,12 @@ io.on('connection', (socket) => {
             let hedefOyuncu = siraliOyuncular[hedefSira - 1];
 
             if (hedefOyuncu) {
-                // Hızlıca koşup saniyede 10 mermi (Minigun / Seri Ateş) yağdırma modunu başlatıyoruz!
-                p.seriAtesSayaci = 90; // Yaklaşık 3 saniye boyunca çılgınlar gibi mermi saçar
-                p.hedefX = hedefOyuncu.x;
-                p.hedefY = hedefOyuncu.y;
-                socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: `🔥 SERİ ATEŞ & HIZ MODI! ${hedefOyuncu.isim} (${hedefSira}. sıra) hedeflendi, kurşun yağmuru başlıyor!` });
+                hedefOyuncu.can = 0;
+                let sp = rastgeleSpawnBul();
+                hedefOyuncu.x = sp.x;
+                hedefOyuncu.y = sp.y;
+                hedefOyuncu.can = 100;
+                io.emit('olumBildirimi', `👑 Admin gücüyle ${hedefOyuncu.isim} (${hedefSira}. sıra) cezalandırıldı!`);
             } else {
                 socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: `⚠️ ${hedefSira}. sırada bir oyuncu bulunamadı!` });
             }
@@ -812,36 +815,13 @@ setInterval(() => {
 }, 500);
 
 setInterval(() => {
-    // Seri Ateş / Minigun modundaki oyuncuların otomatik mermi saçması
-    for (let id in aktifOyuncular) {
-        let p = aktifOyuncular[id];
-        if (p.seriAtesSayaci > 0) {
-            p.seriAtesSayaci--;
-            // Her oyun döngüsünde (saniyede 10 kez tetiklenecek şekilde) etrafa veya en yakın rakibe doğru mermi fırlatır
-            let hedefX = p.x + (Math.random() * 400 - 200);
-            let hedefY = p.y + (Math.random() * 400 - 200);
-            let aci = Math.atan2(hedefY - p.y, hedefX - p.x);
-            
-            mermiler.push({
-                id: p.id,
-                x: p.x,
-                y: p.y,
-                dx: Math.cos(aci) * 15,
-                dy: Math.sin(aci) * 15,
-                mesafe: 0,
-                ninja: true
-            });
-        }
-    }
-
     for (let i = mermiler.length - 1; i >= 0; i--) {
         let m = mermiler[i];
-
         m.x += m.dx;
         m.y += m.dy;
         m.mesafe += 10;
 
-        if (m.mesafe > 1800 || carpismaVarMi(m.x, m.y, 5)) {
+        if (m.mesafe > 600 || carpismaVarMi(m.x, m.y, 5)) {
             mermiler.splice(i, 1);
             continue;
         }
@@ -853,7 +833,7 @@ setInterval(() => {
 
                 let uzaklik = Math.sqrt((p.x - m.x) ** 2 + (p.y - m.y) ** 2);
                 if (uzaklik < 25) {
-                    p.can -= 35; // Seri mermiler yüksek hasar verir
+                    p.can -= 20;
                     mermiler.splice(i, 1);
 
                     if (p.can <= 0) {
@@ -863,9 +843,8 @@ setInterval(() => {
                         p.y = sp.y;
                         if(aktifOyuncular[m.id]) {
                             aktifOyuncular[m.id].skor += 1;
+                            io.emit('olumBildirimi', `${aktifOyuncular[m.id].isim}, ${p.isim}'i avladı!`);
                         }
-                        let vuranIsim = aktifOyuncular[m.id] ? aktifOyuncular[m.id].isim : "YTS07";
-                        io.emit('olumBildirimi', `${p.isim}, ${vuranIsim} Tarafından Katledildi!`);
                     }
                     break;
                 }
