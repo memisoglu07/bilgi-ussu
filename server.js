@@ -9,10 +9,9 @@ const io = new Server(server);
 
 const PORT = process.env.PORT || 3000;
 
-// Statik dosyalar (örneğin /karakterler/Chest.webp için)
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- HARİTA VE OYUN AYARLARI ---
+// --- HARİTA VE RENKLİ BÖLGELER ---
 const HARITA_GENISLIK = 2000;
 const HARITA_YUKSEKLIK = 1500;
 
@@ -25,9 +24,10 @@ const DUVARLAR = [
 ];
 
 const BOLGELER = [
-    { x: 50, y: 50, w: 500, h: 400, isim: "1. ÜNİTE BÖLGESİ", renk: "rgba(0, 150, 255, 0.15)", yaziRengi: "#00a8ff" },
-    { x: 1300, y: 50, w: 600, h: 400, isim: "2. ÜNİTE BÖLGESİ", renk: "rgba(255, 150, 0, 0.15)", yaziRengi: "#ff9f43" },
-    { x: 50, y: 1000, w: 600, h: 400, isim: "3. ÜNİTE BÖLGESİ", renk: "rgba(46, 213, 115, 0.15)", yaziRengi: "#2ed573" }
+    { x: 50, y: 50, w: 500, h: 400, isim: "MAVİ BÖLGE", renk: "rgba(0, 150, 255, 0.15)", yaziRengi: "#00a8ff" },
+    { x: 1300, y: 50, w: 600, h: 400, isim: "TURUNCU BÖLGE", renk: "rgba(255, 150, 0, 0.15)", yaziRengi: "#ff9f43" },
+    { x: 50, y: 1000, w: 600, h: 400, isim: "YEŞİL BÖLGE", renk: "rgba(46, 213, 115, 0.15)", yaziRengi: "#2ed573" },
+    { x: 700, y: 600, w: 500, h: 300, isim: "SİYAH ÜS", renk: "rgba(20, 20, 20, 0.4)", yaziRengi: "#a4b0be" }
 ];
 
 let chestler = [
@@ -42,26 +42,17 @@ const SORU_HAVUZU = {
     unite1: [
         { soru: "Güneş sistemindeki en büyük gezegen hangisidir?", secenekler: ["Dünya", "Jüpiter", "Mars", "Satürn"], cevap: 1 },
         { soru: "Dünya'nın tek doğal uydusu nedir?", secenekler: ["Güneş", "Ay", "Titan", "Phobos"], cevap: 1 }
-    ],
-    unite2: [
-        { soru: "Hücrenin yönetim merkezi neresidir?", secenekler: ["Mitokondri", "Çekirdek", "Sitoplazma", "Kloroplast"], cevap: 1 },
-        { soru: "Bitki hücresinde bulunup hayvan hücresinde bulunmayan organel hangisidir?", secenekler: ["Kloroplast", "Ribozom", "Koful", "Golgi"], cevap: 0 }
-    ],
-    unite3: [
-        { soru: "Kuvvetin birimi nedir?", secenekler: ["Pascal", "Joule", "Newton", "Watt"], cevap: 2 }
     ]
 };
 
 let aktifOyuncular = {};
 let mermiler = [];
-let kalanMacSuresi = 300; // 5 dakika
+let kalanMacSuresi = 300;
 
-// Sayac Döngüsü
 setInterval(() => {
     if (kalanMacSuresi > 0) kalanMacSuresi--;
 }, 1000);
 
-// Çarpışma Kontrolü
 function carpismaVarMi(x, y, yaricap) {
     for (let d of DUVARLAR) {
         if (x + yaricap > d.x && x - yaricap < d.x + d.w &&
@@ -82,31 +73,29 @@ function rastgeleSpawnBul() {
     return { x, y };
 }
 
-// --- ROUTE'LAR (SAYFALAR) ---
-
-// 1. Ana Sayfa (İsim Girişi)
+// --- 1. GİRİŞ SAYFASI ---
 app.get('/', (req, res) => {
     res.send(`
         <!DOCTYPE html><html><head><title>Giriş - Fen Arena</title><style>
             body { background: #0f0f0f; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
             .kutusu { background: #181818; border: 2px solid #FFD700; padding: 30px; border-radius: 12px; text-align: center; box-shadow: 0 0 20px rgba(255,215,0,0.3); }
             input, button { padding: 12px; margin-top: 10px; width: 80%; border-radius: 6px; border: none; font-size: 16px; }
-            input { background: #333; color: #fff; border: 1px solid #FFD700; }
-            button { background: #FFD700; color: #000; font-weight: bold; cursor: pointer; }
-            button:hover { background: #e6c200; }
+            input { background: #333; color: #fff; border: 1px solid #FFD700; outline: none; }
+            button { background: #FFD700; color: #000; font-weight: bold; cursor: pointer; transition: 0.2s; }
+            button:hover { background: #fff; transform: scale(1.05); }
         </style></head><body>
             <div class="kutusu">
                 <h2>⚡ FEN BİLİMLERİ ARENA ⚡</h2>
-                <p>Oyuna katılmak için adını gir:</p>
-                <input type="text" id="isimInput" placeholder="Oyuncu Adı..." maxlength="15"><br>
-                <button onclick="girisYap()">Oyuna Başla</button>
+                <p>Kendi karakterini yaratmadan önce adını gir:</p>
+                <input type="text" id="isimInput" placeholder="Savaşçı Adı..." maxlength="15"><br>
+                <button onclick="girisYap()">İleri ➔</button>
             </div>
             <script>
                 function girisYap() {
                     const isim = document.getElementById('isimInput').value.trim();
                     if(isim) {
                         sessionStorage.setItem('oyuncuIsim', isim);
-                        window.location.href = '/unite-sec';
+                        window.location.href = '/avatar-yap';
                     } else { alert('Lütfen bir isim girin!'); }
                 }
             </script>
@@ -114,21 +103,88 @@ app.get('/', (req, res) => {
     `);
 });
 
-// 2. Ünite Seçim Sayfası
-app.get('/unite-sec', (req, res) => {
+// --- 2. KALİTELİ SKİN / AVATAR YAPMA SAYFASI ---
+app.get('/avatar-yap', (req, res) => {
     res.send(`
-        <!DOCTYPE html><html><head><title>Ünite Seçimi</title><style>
-            body { background: #0f0f0f; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-            .btn { background: #222; color: #FFD700; border: 2px solid #FFD700; padding: 15px 30px; margin: 10px; border-radius: 8px; font-size: 18px; cursor: pointer; width: 250px; font-weight: bold; transition: 0.2s; }
-            .btn:hover { background: #FFD700; color: #000; }
+        <!DOCTYPE html><html><head><title>Skin Yaratıcı</title><style>
+            body { background: #0f0f0f; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; margin: 0; padding-top: 50px; user-select: none; }
+            h2 { color: #FFD700; }
+            .container { display: flex; gap: 30px; background: #181818; padding: 20px; border: 2px solid #FFD700; border-radius: 15px; box-shadow: 0 0 20px rgba(255,215,0,0.2); }
+            canvas { background: #fff; border: 2px solid #555; cursor: crosshair; image-rendering: pixelated; }
+            .tools { display: flex; flex-direction: column; gap: 10px; width: 150px; }
+            .color-btn { width: 100%; height: 35px; border: 2px solid #333; border-radius: 6px; cursor: pointer; }
+            .color-btn.active { border-color: #FFD700; transform: scale(1.05); }
+            button { background: #FFD700; color: #000; font-weight: bold; padding: 12px; border: none; border-radius: 6px; cursor: pointer; transition: 0.2s; font-size: 14px; }
+            button:hover { background: #fff; }
+            .silgi { background: #ff4757; color: white; }
+            .silgi:hover { background: #ff6b81; }
         </style></head><body>
-            <h2>📘 Hangi Üniteden Soru Çıksın?</h2>
-            <button class="btn" onclick="sec('unite1')">1. Ünite: Güneş Sistemi</button>
-            <button class="btn" onclick="sec('unite2')">2. Ünite: Hücre ve Bölünmeler</button>
-            <button class="btn" onclick="sec('unite3')">3. Ünite: Kuvvet ve Enerji</button>
+            <h2>🎨 Savaşçı Kostümünü Tasarla</h2>
+            <div class="container">
+                <canvas id="cizimAlani" width="160" height="160"></canvas>
+                <div class="tools">
+                    <p style="margin:0; font-size:12px; color:#aaa;">Renkler:</p>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
+                        <div class="color-btn active" style="background:#000;" onclick="renkSec(this, '#000')"></div>
+                        <div class="color-btn" style="background:#fff;" onclick="renkSec(this, '#fff')"></div>
+                        <div class="color-btn" style="background:#ff4757;" onclick="renkSec(this, '#ff4757')"></div>
+                        <div class="color-btn" style="background:#2ed573;" onclick="renkSec(this, '#2ed573')"></div>
+                        <div class="color-btn" style="background:#1e90ff;" onclick="renkSec(this, '#1e90ff')"></div>
+                        <div class="color-btn" style="background:#ffa502;" onclick="renkSec(this, '#ffa502')"></div>
+                    </div>
+                    <input type="color" id="ozelRenk" onchange="renkSec(null, this.value)" style="width:100%; height:40px; cursor:pointer; margin-top:5px;">
+                    
+                    <button class="silgi" onclick="renkSec(null, '#ffffff')">🧹 Silgi Kullan</button>
+                    <button onclick="temizle()" style="background:#555; color:white;">Tümünü Sil</button>
+                    
+                    <button style="margin-top:20px; font-size:16px; padding:15px;" onclick="kaydetVeBasla()">⚔️ OYUNA GİR</button>
+                </div>
+            </div>
+            
             <script>
-                function sec(u) {
-                    sessionStorage.setItem('secilenUnite', u);
+                const canvas = document.getElementById('cizimAlani');
+                const ctx = canvas.getContext('2d');
+                const gridBoyutu = 16;
+                const hucreBoyutu = canvas.width / gridBoyutu;
+                
+                let aktifRenk = '#000000';
+                let cizimYapiyorMu = false;
+
+                // Tuvali beyaza boya
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                function renkSec(el, renk) {
+                    aktifRenk = renk;
+                    if(el) {
+                        document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+                        el.classList.add('active');
+                    }
+                }
+
+                function temizle() {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                }
+
+                function boya(e) {
+                    if(!cizimYapiyorMu) return;
+                    const rect = canvas.getBoundingClientRect();
+                    const x = Math.floor((e.clientX - rect.left) / hucreBoyutu) * hucreBoyutu;
+                    const y = Math.floor((e.clientY - rect.top) / hucreBoyutu) * hucreBoyutu;
+                    
+                    ctx.fillStyle = aktifRenk;
+                    ctx.fillRect(x, y, hucreBoyutu, hucreBoyutu);
+                }
+
+                canvas.addEventListener('mousedown', (e) => { cizimYapiyorMu = true; boya(e); });
+                canvas.addEventListener('mousemove', boya);
+                canvas.addEventListener('mouseup', () => cizimYapiyorMu = false);
+                canvas.addEventListener('mouseleave', () => cizimYapiyorMu = false);
+
+                function kaydetVeBasla() {
+                    const avatarData = canvas.toDataURL(); // Çizimi resme dönüştür
+                    sessionStorage.setItem('oyuncuAvatar', avatarData);
                     window.location.href = '/oyun-alani';
                 }
             </script>
@@ -136,7 +192,7 @@ app.get('/unite-sec', (req, res) => {
     `);
 });
 
-// 3. Oyun Alanı (Sağ tık ve F12 Korumalı + Özel Hile Desteği)
+// --- 3. OYUN ALANI SAYFASI ---
 app.get('/oyun-alani', (req, res) => {
     res.send(`
         <!DOCTYPE html><html><head><title>Fen Bilimleri Chest Arena</title><style>
@@ -145,10 +201,6 @@ app.get('/oyun-alani', (req, res) => {
             .ui { margin-bottom:4px; font-size:16px; color:#FFD700; font-weight:bold; }
             .bilgi { font-size:12px; color:#aaa; margin-bottom:4px; }
             
-            #muzikPaneli { position: fixed; top: 15px; right: 20px; background: rgba(20, 20, 20, 0.9); border: 2px solid #FFD700; padding: 8px 12px; border-radius: 10px; z-index: 1000; display: flex; align-items: center; gap: 8px; box-shadow: 0 0 15px rgba(255,215,0,0.3); }
-            #muzikPaneli button { background: #333; color: #FFD700; border: 1px solid #FFD700; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; transition: 0.2s; }
-            #muzikPaneli button:hover { background: #FFD700; color: #000; }
-
             #ustPanel { position: fixed; top: 15px; left: 20px; display: flex; gap: 15px; z-index: 1000; font-family: monospace; }
             .panelKutusu { background: rgba(20, 20, 20, 0.9); border: 2px solid #FFD700; padding: 8px 12px; border-radius: 10px; box-shadow: 0 0 15px rgba(255,215,0,0.3); color: #FFD700; font-size: 13px; }
             #skorTablosuListesi { margin: 4px 0 0 0; padding-left: 15px; font-size: 11px; color: #fff; text-align: left; max-height: 80px; overflow-y: auto; }
@@ -167,7 +219,7 @@ app.get('/oyun-alani', (req, res) => {
             .kill-msg { background: rgba(0, 0, 0, 0.65); border-left: 4px solid #ff4757; color: #fff; padding: 6px 12px; font-size: 13px; font-weight: bold; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
         </style></head><body>
             <div class="ui">⭐ BİLGİ ÜSSÜ FEN BİLİMLERİ ARENA ⭐</div>
-            <div class="bilgi">Hareket: <b>W,A,S,D</b> | Ateş Et: <b>Sol Tık</b> | Chat: <b>T</b> | <a href="/unite-sec" style="color:#ff4757; text-decoration:none;">Ünite Değiştir</a></div>
+            <div class="bilgi">Hareket: <b>W,A,S,D</b> | Ateş Et: <b>Sol Tık</b> | Chat: <b>T</b></div>
             
             <div id="ustPanel">
                 <div class="panelKutusu">
@@ -177,13 +229,6 @@ app.get('/oyun-alani', (req, res) => {
                     🏆 <b>Skor Tablosu</b>
                     <ul id="skorTablosuListesi"></ul>
                 </div>
-            </div>
-
-            <div id="muzikPaneli">
-                <span id="sesIkona" style="cursor:pointer; font-size:18px;" onclick="toggleMuzik()" title="Sesi Aç/Kapat">🔊</span>
-                <button onclick="oynat('https://upload.wikimedia.org/wikipedia/commons/b/b2/Beethoven_Moonlight_1st_movement.ogg')">Klasik</button>
-                <button onclick="oynat('https://upload.wikimedia.org/wikipedia/commons/d/d4/Mozart_Eine_kleine_Nachtmusik_1st_movement.ogg')">Nachtmusik</button>
-                <button onclick="oynat('https://upload.wikimedia.org/wikipedia/commons/e/e2/Vivaldi_The_Four_Seasons_-_Spring_mvt_1_-_John_Harrison_violin.ogg')">Vivaldi</button>
             </div>
 
             <div id="soruModal">
@@ -202,7 +247,7 @@ app.get('/oyun-alani', (req, res) => {
             
             <script src="/socket.io/socket.io.js"></script>
             <script>
-                // --- İNCELE VE F12 KORUMASI ---
+                // --- SAĞ TIK VE F12 KORUMASI ---
                 document.addEventListener('contextmenu', e => e.preventDefault());
                 document.addEventListener('keydown', (e) => {
                     if (
@@ -215,48 +260,22 @@ app.get('/oyun-alani', (req, res) => {
                     }
                 });
 
-                let muzik = window.muzik || new Audio(sessionStorage.getItem('muzikSrc') || 'https://upload.wikimedia.org/wikipedia/commons/b/b2/Beethoven_Moonlight_1st_movement.ogg');
-                window.muzik = muzik;
-                muzik.loop = true;
-                muzik.volume = 0.4;
-                
-                window.onload = () => {
-                    muzik.currentTime = parseFloat(sessionStorage.getItem('muzikTime')) || 0;
-                    if(sessionStorage.getItem('muzikPlaying') === 'true') {
-                        muzik.play().catch(e => console.log("Müzik oto-başlatma engellendi"));
-                    }
-                };
-                setInterval(() => sessionStorage.setItem('muzikTime', muzik.currentTime), 500);
-
-                function oynat(url) { 
-                    muzik.src = url; 
-                    sessionStorage.setItem('muzikSrc', url); 
-                    muzik.play(); 
-                    sessionStorage.setItem('muzikPlaying', 'true'); 
-                    document.getElementById('sesIkona').innerText = '🔊';
-                }
-
-                function toggleMuzik() {
-                    if(muzik.paused) { 
-                        muzik.play(); 
-                        sessionStorage.setItem('muzikPlaying', 'true'); 
-                        document.getElementById('sesIkona').innerText = '🔊'; 
-                    } else { 
-                        muzik.pause(); 
-                        sessionStorage.setItem('muzikPlaying', 'false'); 
-                        document.getElementById('sesIkona').innerText = '🔇'; 
-                    }
-                }
-
                 const isim = sessionStorage.getItem('oyuncuIsim') || 'Savaşçı';
-                const secilenUnite = sessionStorage.getItem('secilenUnite') || 'unite1';
+                const avatar = sessionStorage.getItem('oyuncuAvatar') || ''; // Çizilen skin
 
-                const socket = io({ query: { isim: isim, unite: secilenUnite } });
+                const socket = io({ query: { isim: isim } });
+
+                socket.on('connect', () => {
+                    // Bağlanınca çizilen skini sunucuya gönder
+                    if(avatar) socket.emit('avatarGuncelle', avatar);
+                });
 
                 const canvas = document.getElementById('arena');
                 const ctx = canvas.getContext('2d');
 
                 let oyunVerisi = { players: {}, bullets: [], walls: ${JSON.stringify(DUVARLAR)}, chests: ${JSON.stringify(chestler)}, bolgeler: ${JSON.stringify(BOLGELER)}, kalanSure: 300 };
+                let yuklenmisAvatarResimleri = {}; // Çizimleri bellekte tutmak için
+
                 let chestImg = new Image();
                 let chestYuklendi = false;
                 chestImg.onload = () => { chestYuklendi = true; };
@@ -399,6 +418,7 @@ app.get('/oyun-alani', (req, res) => {
                     ctx.save();
                     ctx.translate(-kameraX, -kameraY);
 
+                    // Renkli Bölgeler Çizimi
                     for(let b of oyunVerisi.bolgeler) {
                         ctx.fillStyle = b.renk;
                         ctx.fillRect(b.x, b.y, b.w, b.h);
@@ -441,21 +461,45 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.save();
                         ctx.translate(p.x, p.y);
 
+                        // Can Barı
                         ctx.fillStyle = 'red';
                         ctx.fillRect(-25, -45, 50, 6);
                         ctx.fillStyle = 'green';
                         ctx.fillRect(-25, -45, (Math.min(p.can, 100) / 100) * 50, 6);
 
+                        // İsim
                         ctx.fillStyle = '#fff';
                         ctx.font = 'bold 12px sans-serif';
                         ctx.textAlign = 'center';
                         ctx.fillText(p.isim, 0, -30);
 
-                        ctx.fillStyle = '#FFD700';
-                        ctx.beginPath();
-                        ctx.arc(0, 0, 20, 0, Math.PI * 2);
-                        ctx.fill();
+                        // --- ÇİZİLEN AVATARI (SKİNİ) GÖSTERME ---
+                        if (p.avatarData) {
+                            if (!yuklenmisAvatarResimleri[id]) {
+                                let img = new Image();
+                                img.src = p.avatarData;
+                                yuklenmisAvatarResimleri[id] = img;
+                            }
+                            
+                            let kisiselSkin = yuklenmisAvatarResimleri[id];
+                            if (kisiselSkin.complete) {
+                                // Çizimi yuvarlak içine yerleştirme
+                                ctx.beginPath();
+                                ctx.arc(0, 0, 20, 0, Math.PI * 2);
+                                ctx.clip();
+                                ctx.imageSmoothingEnabled = false; // Piksel art görünümü koru
+                                ctx.drawImage(kisiselSkin, -20, -20, 40, 40);
+                                ctx.imageSmoothingEnabled = true;
+                            }
+                        } else {
+                            // Avatar çizmediyse varsayılan sarı yuvarlak
+                            ctx.fillStyle = '#FFD700';
+                            ctx.beginPath();
+                            ctx.arc(0, 0, 20, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
 
+                        // Karakter Çerçevesi
                         ctx.strokeStyle = '#fff';
                         ctx.lineWidth = 2;
                         ctx.beginPath();
@@ -472,21 +516,27 @@ app.get('/oyun-alani', (req, res) => {
     `);
 });
 
-// --- SOCKET.IO SUNUCU MANTIĞI ---
+// --- SUNUCU SOCKET YÖNETİMİ ---
 io.on('connection', (socket) => {
     let isim = socket.handshake.query.isim || 'Savaşçı';
-    let secilenUnite = socket.handshake.query.unite || 'unite1';
     let spawn = rastgeleSpawnBul();
 
     aktifOyuncular[socket.id] = {
         id: socket.id,
         isim: isim,
-        unite: secilenUnite,
         x: spawn.x,
         y: spawn.y,
         can: 100,
-        skor: 0
+        skor: 0,
+        avatarData: '' // Çizilen skin buraya gelecek
     };
+
+    // Client'tan çizilmiş skin gelirse sunucuya kaydet
+    socket.on('avatarGuncelle', (veri) => {
+        if(aktifOyuncular[socket.id]) {
+            aktifOyuncular[socket.id].avatarData = veri;
+        }
+    });
 
     socket.on('hareketEt', (h) => {
         let p = aktifOyuncular[socket.id];
@@ -518,7 +568,7 @@ io.on('connection', (socket) => {
         let p = aktifOyuncular[socket.id];
         if(!p) return;
 
-        // --- SADECE SENİN KULLANABİLECEĞİN GİZLİ HİLE KODU ---
+        // Gizli Hile Kodu (Sadece Sen Kullanabilirsin - F12 Kapalı)
         if (mesaj === '/selmanhile') {
             p.can = 9999;
             p.skor += 50;
@@ -546,7 +596,7 @@ io.on('connection', (socket) => {
     });
 });
 
-// Sandık Etkileşim Döngüsü
+// Sandık Mantığı
 setInterval(() => {
     for (let c of chestler) {
         if (c.aktif) {
@@ -555,11 +605,8 @@ setInterval(() => {
                 let mesafe = Math.sqrt((p.x - c.x) ** 2 + (p.y - c.y) ** 2);
                 if (mesafe < 35) {
                     c.aktif = false;
-                    let liste = SORU_HAVUZU[p.unite] || SORU_HAVUZU["unite1"];
-                    let rastgeleSoru = liste[Math.floor(Math.random() * liste.length)];
-                    
+                    let rastgeleSoru = SORU_HAVUZU.unite1[Math.floor(Math.random() * SORU_HAVUZU.unite1.length)];
                     io.to(id).emit('soruGoster', { chestId: c.id, soruData: rastgeleSoru });
-
                     setTimeout(() => { c.aktif = true; }, 10000);
                     break;
                 }
@@ -568,7 +615,7 @@ setInterval(() => {
     }
 }, 500);
 
-// Fizik ve Mermi Döngüsü (60 FPS)
+// Fizik Döngüsü (Mermiler ve Çarpışmalar)
 setInterval(() => {
     for (let i = mermiler.length - 1; i >= 0; i--) {
         let m = mermiler[i];
