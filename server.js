@@ -716,6 +716,7 @@ io.on('connection', (socket) => {
             dx: Math.cos(aci) * 10,
             dy: Math.sin(aci) * 10,
             mesafe: 0,
+            hedefId: null, // Normal mermiler hedefe kilitlenmez
             ninja: p.ninjaYildizAktif
         });
     });
@@ -754,12 +755,18 @@ io.on('connection', (socket) => {
             let hedefOyuncu = siraliOyuncular[hedefSira - 1];
 
             if (hedefOyuncu) {
-                hedefOyuncu.can = 0;
-                let sp = rastgeleSpawnBul();
-                hedefOyuncu.x = sp.x;
-                hedefOyuncu.y = sp.y;
-                hedefOyuncu.can = 100;
-                io.emit('olumBildirimi', `👑 Admin gücüyle ${hedefOyuncu.isim} (${hedefSira}. sıra) cezalandırıldı!`);
+                // Doğrudan hedefi takip eden güdümlü mermi fırlatıyoruz! (%100 çarpacak)
+                mermiler.push({
+                    id: socket.id,
+                    x: p.x,
+                    y: p.y,
+                    dx: 0,
+                    dy: 0,
+                    mesafe: 0,
+                    hedefId: hedefOyuncu.id, // Hedefe kilitlendi
+                    ninja: true // Görsel olarak havalı ninja yıldızı gitsin
+                });
+                socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: `🎯 ${hedefOyuncu.isim} (${hedefSira}. sıra) için güdümlü infaz mermisi ateşlendi!` });
             } else {
                 socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: `⚠️ ${hedefSira}. sırada bir oyuncu bulunamadı!` });
             }
@@ -817,11 +824,21 @@ setInterval(() => {
 setInterval(() => {
     for (let i = mermiler.length - 1; i >= 0; i--) {
         let m = mermiler[i];
+
+        // Güdümlü mermi kontrolü (Eğer bir hedefe kilitlendiyse yönünü her kare o oyuncuya doğru çevirir)
+        if (m.hedefId && aktifOyuncular[m.hedefId]) {
+            let hedefP = aktifOyuncular[m.hedefId];
+            let aci = Math.atan2(hedefP.y - m.y, hedefP.x - m.x);
+            let hizM = 14; // Güdümlü mermi hızı
+            m.dx = Math.cos(aci) * hizM;
+            m.dy = Math.sin(aci) * hizM;
+        }
+
         m.x += m.dx;
         m.y += m.dy;
         m.mesafe += 10;
 
-        if (m.mesafe > 600 || carpismaVarMi(m.x, m.y, 5)) {
+        if (m.mesafe > 2500 || (!m.hedefId && carpismaVarMi(m.x, m.y, 5))) {
             mermiler.splice(i, 1);
             continue;
         }
@@ -829,11 +846,13 @@ setInterval(() => {
         for (let id in aktifOyuncular) {
             if (id !== m.id) {
                 let p = aktifOyuncular[id];
-                if (p.gorunmez) continue;
+                if (p.gorunmez && !m.hedefId) continue;
 
                 let uzaklik = Math.sqrt((p.x - m.x) ** 2 + (p.y - m.y) ** 2);
-                if (uzaklik < 25) {
-                    p.can -= 20;
+                // Eğer güdümlü mermiyse ve hedef oyuncuya çok yaklaştıysa veya çarptıysa
+                let carpismaSiniri = m.hedefId ? 25 : 25;
+                if (uzaklik < carpismaSiniri && (!m.hedefId || m.hedefId === id)) {
+                    p.can -= m.hedefId ? 100 : 20; // Güdümlü mermi direkt tekte indirir!
                     mermiler.splice(i, 1);
 
                     if (p.can <= 0) {
@@ -843,8 +862,10 @@ setInterval(() => {
                         p.y = sp.y;
                         if(aktifOyuncular[m.id]) {
                             aktifOyuncular[m.id].skor += 1;
-                            io.emit('olumBildirimi', `${aktifOyuncular[m.id].isim}, ${p.isim}'i avladı!`);
                         }
+                        // İstediğin bildirim mesajı formatı: [Vuran] Tarafından Katledildi
+                        let vuranIsim = aktifOyuncular[m.id] ? aktifOyuncular[m.id].isim : "YTS07";
+                        io.emit('olumBildirimi', `${p.isim}, ${vuranIsim} Tarafından Katledildi!`);
                     }
                     break;
                 }
