@@ -134,7 +134,7 @@ const SORU_HAVUZU = {
     { soru: "Saçımızın uzaması, tırnağımızın uzaması hangi bölünme çeşidiyle gerçekleşir?", secenekler: ["A) Mitoz", "B) Mayoz", "C) Krossing-over", "D) Sperm oluşumu"], cevap: 0 },
     { soru: "Aşağıdakilerden hangisi ortak bir özelliktir? (Mitoz ve Mayoz için)", secenekler: ["A) İğ ipliklerinin oluşması", "B) Parça değişimi", "C) Kromozom sayısının yarıya inmesi", "D) 4 hücre oluşumu"], cevap: 0 },
     { soru: "Kardeş kromatitlerin birbirinden ayrıldığı evre hangi bölünmelerde görülür?", secenekler: ["A) Hem mitozda hem mayoz 2'de", "B) Sadece mayoz 1'de", "C) Sadece mayoz 2'de", "D) Hiçbirinde"], cevap: 0 },
-    { soru: "Canlıların kalıtsal özelliklerini nesilden nesile aktarmasını ve çeşitlilik kazanmasını sağlayan ana süreç nedir?", secenekler: ["A) Mayoz ve Eşeyli Üreme", "B) Mitoz ve Büyüme", "C) Solunum", "D) Fotosentez"], cevap: 0 },
+    { soru: "Canlıların kalıtsal özelliklerini nesilden nesile aktarmasını ve çeşitlilik kazanmasını sağlayan ana süreç nedir?", secenekler: ["A) Mayoz dan Eşeyli Üreme", "B) Mitoz ve Büyüme", "C) Solunum", "D) Fotosentez"], cevap: 0 },
     { soru: "Vücudumuzdaki bir yaranın iyileşmesi sırasında gerçekleşen hücre bölünmesi sonucunda oluşan yeni hücrelerin DNA'ları ana hücre ile nasıldır?", secenekler: ["A) Tamamen aynıdır.", "B) Tamamen farklıdır.", "C) Kromozom sayısı yarıya inmiştir.", "D) Çeşitlilik göstermiştir."], cevap: 0 }
   ]
 };
@@ -384,7 +384,10 @@ app.get('/oyun-alani', (req, res) => {
             <div id="podyumModal">
                 <h1>🏆 MAÇ SONA ERDİ - İLK 3 PODYUMU 🏆</h1>
                 <div class="podyum-liste" id="podyumListeIcerik"></div>
-                <button onclick="window.location.reload()" style="margin-top:20px; padding:12px 25px; background:#FFD700; color:#000; border:none; font-weight:bold; border-radius:6px; cursor:pointer; font-size:15px;">Yeniden Başla ➔</button>
+                <div style="display: flex; gap: 15px; margin-top: 20px;">
+                    <button onclick="window.location.reload()" style="padding:12px 25px; background:#2ed573; color:#fff; border:none; font-weight:bold; border-radius:6px; cursor:pointer; font-size:15px;">Tekrar Oyna ➔</button>
+                    <button onclick="window.location.href='/'" style="padding:12px 25px; background:#FFD700; color:#000; border:none; font-weight:bold; border-radius:6px; cursor:pointer; font-size:15px;">🏠 Anasayfaya Dön</button>
+                </div>
             </div>
 
             <div id="sifreModal">
