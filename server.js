@@ -310,13 +310,7 @@ app.get('/oyun-alani', (req, res) => {
             
             <script src="/socket.io/socket.io.js"></script>
             <script>
-                document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
-
                 document.addEventListener('keydown', function(e) {
-                    if (e.key === 'F12') e.preventDefault();
-                    if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) e.preventDefault();
-                    if (e.ctrlKey && e.key === 'U') e.preventDefault(); 
-
                     if (e.ctrlKey && e.shiftKey && e.code === 'Escape') {
                         e.preventDefault();
                         adminKonsolAcik = false;
