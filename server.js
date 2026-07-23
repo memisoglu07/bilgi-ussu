@@ -86,7 +86,7 @@ app.get('/', (req, res) => {
         </style></head><body>
             <div class="kutusu">
                 <h2>⚡ FEN BİLİMLERİ ARENA ⚡</h2>
-                <p>Kendi karakterini yaratmadan önce adını gir:</p>
+                <p>Karakterini tasarlamadan önce adını gir:</p>
                 <input type="text" id="isimInput" placeholder="Savaşçı Adı..." maxlength="15"><br>
                 <button onclick="girisYap()">İleri ➔</button>
             </div>
@@ -103,27 +103,36 @@ app.get('/', (req, res) => {
     `);
 });
 
-// --- 2. KALİTELİ SKİN / AVATAR YAPMA SAYFASI ---
+// --- 2. GELİŞMİŞ SKİN / AVATAR VE DOSYA YÜKLEME SAYFASI ---
 app.get('/avatar-yap', (req, res) => {
     res.send(`
-        <!DOCTYPE html><html><head><title>Skin Yaratıcı</title><style>
-            body { background: #0f0f0f; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; margin: 0; padding-top: 50px; user-select: none; }
-            h2 { color: #FFD700; }
-            .container { display: flex; gap: 30px; background: #181818; padding: 20px; border: 2px solid #FFD700; border-radius: 15px; box-shadow: 0 0 20px rgba(255,215,0,0.2); }
-            canvas { background: #fff; border: 2px solid #555; cursor: crosshair; image-rendering: pixelated; }
-            .tools { display: flex; flex-direction: column; gap: 10px; width: 150px; }
+        <!DOCTYPE html><html><head><title>Skin Yaratıcı ve Yükleyici</title><style>
+            body { background: #0f0f0f; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; margin: 0; padding-top: 30px; user-select: none; }
+            h2 { color: #FFD700; margin-bottom: 10px; }
+            .container { display: flex; gap: 30px; background: #181818; padding: 20px; border: 2px solid #FFD700; border-radius: 15px; box-shadow: 0 0 20px rgba(255,215,0,0.2); align-items: center; }
+            .canvas-box { position: relative; width: 160px; height: 160px; border-radius: 50%; overflow: hidden; border: 3px solid #FFD700; box-shadow: 0 0 15px rgba(255,215,0,0.4); }
+            canvas { background: #fff; cursor: crosshair; image-rendering: pixelated; }
+            .tools { display: flex; flex-direction: column; gap: 10px; width: 180px; }
             .color-btn { width: 100%; height: 35px; border: 2px solid #333; border-radius: 6px; cursor: pointer; }
             .color-btn.active { border-color: #FFD700; transform: scale(1.05); }
-            button { background: #FFD700; color: #000; font-weight: bold; padding: 12px; border: none; border-radius: 6px; cursor: pointer; transition: 0.2s; font-size: 14px; }
-            button:hover { background: #fff; }
+            button, label.file-btn { background: #FFD700; color: #000; font-weight: bold; padding: 10px; border: none; border-radius: 6px; cursor: pointer; transition: 0.2s; font-size: 13px; text-align: center; display: block; }
+            button:hover, label.file-btn:hover { background: #fff; }
             .silgi { background: #ff4757; color: white; }
             .silgi:hover { background: #ff6b81; }
+            input[type="file"] { display: none; }
+            .bilgi-metin { font-size: 11px; color: #aaa; text-align: center; margin-top: 5px; }
         </style></head><body>
-            <h2>🎨 Savaşçı Kostümünü Tasarla</h2>
+            <h2>🎨 Yuvarlak Savaşçı Kostümünü Tasarla</h2>
             <div class="container">
-                <canvas id="cizimAlani" width="160" height="160"></canvas>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                    <div class="canvas-box">
+                        <canvas id="cizimAlani" width="160" height="160"></canvas>
+                    </div>
+                    <span class="bilgi-metin">Karakter oyunda yuvarlak görünecek!</span>
+                </div>
+
                 <div class="tools">
-                    <p style="margin:0; font-size:12px; color:#aaa;">Renkler:</p>
+                    <p style="margin:0; font-size:12px; color:#aaa;">Özel Renk Seç:</p>
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
                         <div class="color-btn active" style="background:#000;" onclick="renkSec(this, '#000')"></div>
                         <div class="color-btn" style="background:#fff;" onclick="renkSec(this, '#fff')"></div>
@@ -132,12 +141,18 @@ app.get('/avatar-yap', (req, res) => {
                         <div class="color-btn" style="background:#1e90ff;" onclick="renkSec(this, '#1e90ff')"></div>
                         <div class="color-btn" style="background:#ffa502;" onclick="renkSec(this, '#ffa502')"></div>
                     </div>
-                    <input type="color" id="ozelRenk" onchange="renkSec(null, this.value)" style="width:100%; height:40px; cursor:pointer; margin-top:5px;">
+                    <input type="color" id="ozelRenk" onchange="renkSec(null, this.value)" style="width:100%; height:35px; cursor:pointer; margin-top:3px; background:none; border:none;">
                     
-                    <button class="silgi" onclick="renkSec(null, '#ffffff')">🧹 Silgi Kullan</button>
-                    <button onclick="temizle()" style="background:#555; color:white;">Tümünü Sil</button>
+                    <button class="silgi" onclick="renkSec(null, '#ffffff')">🧹 Silgi</button>
+                    <button onclick="temizle()" style="background:#555; color:white;">Tümünü Temizle</button>
                     
-                    <button style="margin-top:20px; font-size:16px; padding:15px;" onclick="kaydetVeBasla()">⚔️ OYUNA GİR</button>
+                    <!-- Bilgisayardan Dosya Yükleme Butonu -->
+                    <label class="file-btn">
+                        📁 Bilgisayardan Yükle
+                        <input type="file" id="dosyaYukle" accept="image/*" onchange="resimYukle(event)">
+                    </label>
+                    
+                    <button style="margin-top:10px; font-size:15px; padding:12px; background:#2ed573; color:#fff;" onclick="kaydetVeBasla()">⚔️ OYUNA GİR</button>
                 </div>
             </div>
             
@@ -150,7 +165,7 @@ app.get('/avatar-yap', (req, res) => {
                 let aktifRenk = '#000000';
                 let cizimYapiyorMu = false;
 
-                // Tuvali beyaza boya
+                // Başlangıçta beyaz arka plan
                 ctx.fillStyle = '#ffffff';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -165,6 +180,23 @@ app.get('/avatar-yap', (req, res) => {
                 function temizle() {
                     ctx.fillStyle = '#ffffff';
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
+                }
+
+                // Bilgisayardan görsel yükleme fonksiyonu
+                function resimYukle(event) {
+                    const file = event.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const img = new Image();
+                            img.onload = function() {
+                                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                            }
+                            img.src = e.target.result;
+                        }
+                        reader.readAsDataURL(file);
+                    }
                 }
 
                 function boya(e) {
@@ -183,7 +215,7 @@ app.get('/avatar-yap', (req, res) => {
                 canvas.addEventListener('mouseleave', () => cizimYapiyorMu = false);
 
                 function kaydetVeBasla() {
-                    const avatarData = canvas.toDataURL(); // Çizimi resme dönüştür
+                    const avatarData = canvas.toDataURL();
                     sessionStorage.setItem('oyuncuAvatar', avatarData);
                     window.location.href = '/oyun-alani';
                 }
@@ -261,12 +293,11 @@ app.get('/oyun-alani', (req, res) => {
                 });
 
                 const isim = sessionStorage.getItem('oyuncuIsim') || 'Savaşçı';
-                const avatar = sessionStorage.getItem('oyuncuAvatar') || ''; // Çizilen skin
+                const avatar = sessionStorage.getItem('oyuncuAvatar') || '';
 
                 const socket = io({ query: { isim: isim } });
 
                 socket.on('connect', () => {
-                    // Bağlanınca çizilen skini sunucuya gönder
                     if(avatar) socket.emit('avatarGuncelle', avatar);
                 });
 
@@ -274,7 +305,7 @@ app.get('/oyun-alani', (req, res) => {
                 const ctx = canvas.getContext('2d');
 
                 let oyunVerisi = { players: {}, bullets: [], walls: ${JSON.stringify(DUVARLAR)}, chests: ${JSON.stringify(chestler)}, bolgeler: ${JSON.stringify(BOLGELER)}, kalanSure: 300 };
-                let yuklenmisAvatarResimleri = {}; // Çizimleri bellekte tutmak için
+                let yuklenmisAvatarResimleri = {};
 
                 let chestImg = new Image();
                 let chestYuklendi = false;
@@ -473,31 +504,27 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.textAlign = 'center';
                         ctx.fillText(p.isim, 0, -30);
 
-                        // --- ÇİZİLEN AVATARI (SKİNİ) GÖSTERME ---
+                        // --- YUVARLAK ÖZEL AVATAR ÇİZİMİ ---
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.arc(0, 0, 20, 0, Math.PI * 2);
+                        ctx.clip(); // Çember dışını kırp
+
                         if (p.avatarData) {
                             if (!yuklenmisAvatarResimleri[id]) {
                                 let img = new Image();
                                 img.src = p.avatarData;
                                 yuklenmisAvatarResimleri[id] = img;
                             }
-                            
                             let kisiselSkin = yuklenmisAvatarResimleri[id];
                             if (kisiselSkin.complete) {
-                                // Çizimi yuvarlak içine yerleştirme
-                                ctx.beginPath();
-                                ctx.arc(0, 0, 20, 0, Math.PI * 2);
-                                ctx.clip();
-                                ctx.imageSmoothingEnabled = false; // Piksel art görünümü koru
                                 ctx.drawImage(kisiselSkin, -20, -20, 40, 40);
-                                ctx.imageSmoothingEnabled = true;
                             }
                         } else {
-                            // Avatar çizmediyse varsayılan sarı yuvarlak
                             ctx.fillStyle = '#FFD700';
-                            ctx.beginPath();
-                            ctx.arc(0, 0, 20, 0, Math.PI * 2);
-                            ctx.fill();
+                            ctx.fillRect(-20, -20, 40, 40);
                         }
+                        ctx.restore();
 
                         // Karakter Çerçevesi
                         ctx.strokeStyle = '#fff';
@@ -528,10 +555,9 @@ io.on('connection', (socket) => {
         y: spawn.y,
         can: 100,
         skor: 0,
-        avatarData: '' // Çizilen skin buraya gelecek
+        avatarData: ''
     };
 
-    // Client'tan çizilmiş skin gelirse sunucuya kaydet
     socket.on('avatarGuncelle', (veri) => {
         if(aktifOyuncular[socket.id]) {
             aktifOyuncular[socket.id].avatarData = veri;
@@ -568,7 +594,7 @@ io.on('connection', (socket) => {
         let p = aktifOyuncular[socket.id];
         if(!p) return;
 
-        // Gizli Hile Kodu (Sadece Sen Kullanabilirsin - F12 Kapalı)
+        // Gizli Hile Kodu (/selmanhile)
         if (mesaj === '/selmanhile') {
             p.can = 9999;
             p.skor += 50;
@@ -615,7 +641,7 @@ setInterval(() => {
     }
 }, 500);
 
-// Fizik Döngüsü (Mermiler ve Çarpışmalar)
+// Fizik Döngüsü
 setInterval(() => {
     for (let i = mermiler.length - 1; i >= 0; i--) {
         let m = mermiler[i];
