@@ -380,6 +380,8 @@ app.get('/oyun-alani', (req, res) => {
                 let oyunVerisi = { players: {}, bullets: [], walls: ${JSON.stringify(DUVARLAR)}, chests: ${JSON.stringify(chestler)}, bolgeler: ${JSON.stringify(BOLGELER)}, kalanSure: 300 };
                 let loadedImages = {};
                 let chestImg = new Image();
+                let chestYuklendi = false;
+                chestImg.onload = () => { chestYuklendi = true; };
                 chestImg.src = '/karakterler/Chest.webp';
 
                 let tuslar = {};
@@ -585,7 +587,12 @@ app.get('/oyun-alani', (req, res) => {
 
                     for(let c of oyunVerisi.chests) {
                         if(c.aktif) {
-                            ctx.drawImage(chestImg, c.x - 20, c.y - 20, 40, 40);
+                            if (chestYuklendi) {
+                                ctx.drawImage(chestImg, c.x - 20, c.y - 20, 40, 40);
+                            } else {
+                                ctx.fillStyle = '#ff9f43';
+                                ctx.fillRect(c.x - 20, c.y - 20, 40, 40);
+                            }
                         }
                     }
 
