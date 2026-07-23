@@ -17,7 +17,6 @@ let aktifOyuncular = {};
 let mermiler = [];
 let avatarOnbellek = {};
 let kalanMacSuresi = 300; // 5 Dakika
-let oyunDurumu = 'devam'; // 'devam' veya 'bitti'
 
 // --- 50'ŞER SORULUK FEN BİLGİSİ SORU HAVUZU ---
 const SORU_HAVUZU = {
@@ -76,7 +75,7 @@ const SORU_HAVUZU = {
     unite2: [
         { soru: "Ay'ın ana evreleri arasındaki süre yaklaşık ne kadardır?", secenekler: ["1 Hafta", "15 Gün", "1 Ay (29.5 gün)", "1 Yıl"], dogru: 2 },
         { soru: "Ay'ın Dünya'dan bakıldığında hep aynı yüzünün görülmesinin temel nedeni nedir?", secenekler: ["Kendi etrafında dönmemesi", "Dünya ile aynı hızda dönmesi", "Kendi ekseni etrafındaki dönme süresi ile Dünya etrafındaki dolanma süresinin eşit olması", "Güneş tarafından aydınlatılamaması"], dogru: 2 },
-        { soru: "Aşağıdakilerden hangisi Ay'ın ana evrelerinden biri değildir?", secenekler: ["Yeni Ay", "Dolunay", "Hilal", "Şişkin Ay"], dogru: 2 }, // Hilal ve şişkin ara evredir, temel ana evreler Yeni Ay, İlk Dördün, Dolunay, Son Dördündür.
+        { soru: "Aşağıdakilerden hangisi Ay'ın ana evrelerinden biri değildir?", secenekler: ["Yeni Ay", "Dolunay", "Hilal", "Şişkin Ay"], dogru: 2 },
         { soru: "Yeni Ay evresinden bir hafta sonra hangi ana evre görülür?", secenekler: ["İlk Dördün", "Dolunay", "Son Dördün", "Hilal"], dogru: 0 },
         { soru: "İlk Dördün evresinden bir hafta sonra hangi ana evre görülür?", secenekler: ["Dolunay", "Yeni Ay", "Son Dördün", "Hilal"], dogru: 0 },
         { soru: "Dolunay evresinden bir hafta sonra hangi ana evre görülür?", secenekler: ["Son Dördün", "İlk Dördün", "Yeni Ay", "Hilal"], dogru: 0 },
@@ -246,7 +245,6 @@ app.get('/', (req, res) => {
             button { width: 100%; padding: 12px; background: #6366f1; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 8px; }
             button:hover { background: #4f46e5; transform: translateY(-2px); }
             
-            /* Skin Seçim Alanı */
             .skinSecimAlani { display: flex; justify-content: space-around; margin: 12px 0; }
             .skinKutusu { width: 50px; height: 50px; border-radius: 50%; border: 3px solid #334155; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; transition: 0.2s; }
             .skinKutusu.secili { border-color: #2ed573; transform: scale(1.1); box-shadow: 0 0 10px #2ed573; }
@@ -259,13 +257,11 @@ app.get('/', (req, res) => {
             .secenekBtn { background: #334155; margin: 8px 0; padding: 12px; width: 100%; border: none; color: white; border-radius: 8px; cursor: pointer; font-size: 15px; transition: 0.2s; pointer-events: auto; }
             .secenekBtn:hover { background: #475569; }
 
-            /* Admin Paneli */
             #adminPaneli { display: none; position: absolute; top: 20px; right: 20px; background: rgba(15, 23, 42, 0.9); border: 2px solid #f43f5e; padding: 15px; border-radius: 10px; z-index: 50; width: 220px; pointer-events: auto; }
             #adminPaneli h4 { margin: 0 0 10px 0; color: #f43f5e; text-align: center; }
             .adminBtn { background: #f43f5e; margin: 4px 0; padding: 8px; font-size: 13px; }
             .adminBtn:hover { background: #e11d48; }
 
-            /* Oyun Bitti Ekranı */
             #bittiModal { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15, 23, 42, 0.95); padding: 40px; border-radius: 15px; border: 2px solid #2ed573; z-index: 200; width: 400px; text-align: center; }
 
             #chatKutusu { position: absolute; bottom: 20px; left: 20px; width: 320px; height: 180px; background: rgba(15, 23, 42, 0.75); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; overflow: hidden; pointer-events: auto; }
@@ -275,7 +271,6 @@ app.get('/', (req, res) => {
     </head>
     <body>
 
-        <!-- Giriş ve Skin Seçim Ekranı -->
         <div id="girisEkrani">
             <div class="kart">
                 <h1 style="color: #818cf8; margin-top: 0;">🚀 FEN ARENA</h1>
@@ -301,7 +296,6 @@ app.get('/', (req, res) => {
             </div>
         </div>
 
-        <!-- Oyun Ekranı -->
         <div id="oyunKutusu">
             <canvas id="oyunCanvas"></canvas>
             <div id="arayuzOverlay">
@@ -310,7 +304,6 @@ app.get('/', (req, res) => {
                 <div>⏳ Süre: <span id="sureYazisi">05:00</span></div>
             </div>
 
-            <!-- Admin Kontrol Paneli (Admin şifresi: 'fenadmin') -->
             <div id="adminPaneli">
                 <h4>🛡️ Admin Paneli</h4>
                 <button class="adminBtn" onclick="adminEmri('ninjayildiz')">🥷 Ninja Yıldızı Modu</button>
@@ -324,13 +317,11 @@ app.get('/', (req, res) => {
             </div>
         </div>
 
-        <!-- Soru Modalı -->
         <div id="soruModal">
             <h3 id="soruMetni" style="color: #f8fafc; margin-top: 0;">Soru Yükleniyor...</h3>
             <div id="seceneklerAlani"></div>
         </div>
 
-        <!-- Oyun Bitti / Yeniden Oyna Modalı -->
         <div id="bittiModal">
             <h2 style="color: #f43f5e; margin-top: 0;">🏁 Maç Sona Erdi!</h2>
             <p id="kazananYazisi" style="font-size: 16px; color: #e2e8f0;"></p>
@@ -411,7 +402,7 @@ app.get('/', (req, res) => {
                 });
 
                 socket.on('macBitti', (veri) => {
-                    document.getElementById('kazananYazisi.innerHTML') = '🏆 Kazanan: <b>' + veri.kazananIsim + '</b> (' + veri.kazananSkor + ' Puan)';
+                    document.getElementById('kazananYazisi').innerHTML = '🏆 Kazanan: <b>' + veri.kazananIsim + '</b> (' + veri.kazananSkor + ' Puan)';
                     document.getElementById('bittiModal').style.display = 'block';
                 });
 
@@ -491,7 +482,6 @@ app.get('/', (req, res) => {
                 location.reload();
             }
 
-            // --- CANVAS ÇİZİM DÖNGÜSÜ ---
             function oyunDongusu() {
                 requestAnimationFrame(oyunDongusu);
 
@@ -644,7 +634,6 @@ app.get('/', (req, res) => {
     `);
 });
 
-// --- SOCKET.IO OYUN MANTIĞI VE SUNUCU LOOP ---
 io.on('connection', (socket) => {
     let isim = socket.handshake.query.isim || 'Savaşçı';
     let konu = socket.handshake.query.konu || 'unite1';
@@ -766,12 +755,10 @@ io.on('connection', (socket) => {
     });
 });
 
-// --- ANA OYUN GÜNCELLEME DÖNGÜSÜ (SERVER TICK) ---
 setInterval(() => {
     kalanMacSuresi--;
     if (kalanMacSuresi <= 0) {
-        // En yüksek skora sahip oyuncuyu bul
-        let en YuksekSkor = -1;
+        let enYuksekSkor = -1;
         let kazananIsim = "Kimse";
         for (let id in aktifOyuncular) {
             if (aktifOyuncular[id].skor > enYuksekSkor) {
@@ -780,7 +767,7 @@ setInterval(() => {
             }
         }
         io.emit('macBitti', { kazananIsim: kazananIsim, kazananSkor: enYuksekSkor });
-        kalanMacSuresi = 300; // Süreyi sıfırla
+        kalanMacSuresi = 300;
     }
 
     for (let i = mermiler.length - 1; i >= 0; i--) {
