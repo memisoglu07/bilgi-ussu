@@ -214,8 +214,8 @@ function carpismaVarMi(x, y, yaricap) {
 
 function rastgeleSpawnBul() {
     for (let i = 0; i < 50; i++) {
-        let rx = Math.floor(Math.random() * (HARITA_GENISLIK - 200)) + 100;
-        let ry = Math.floor(Math.random() * (HARITA_YUKSEKLIK - 200)) + 100;
+        let rx = Math.floor(Math.random() * (HARITA_GENISLIK - 400)) + 200;
+        let ry = Math.floor(Math.random() * (HARITA_YUKSEKLIK - 400)) + 200;
         if (!carpismaVarMi(rx, ry, 30)) {
             return { x: rx, y: ry };
         }
@@ -306,7 +306,7 @@ app.get('/oyun-alani', (req, res) => {
                 <input type="text" id="chatInput" placeholder="Mesaj yazmak için Enter'a bas..." autocomplete="off">
             </div>
 
-            <canvas id="arena" width="900" height="550"></canvas>
+            <canvas id="arena" width="1100" height="650"></canvas>
             
             <script src="/socket.io/socket.io.js"></script>
             <script>
@@ -374,7 +374,11 @@ app.get('/oyun-alani', (req, res) => {
                 const benimAvatarim = sessionStorage.getItem('oyuncuAvatar') || '';
 
                 const socket = io({ query: { isim: isim }, forceNew: true });
-                socket.on('connect', () => { socket.emit('avatarGuncelle', benimAvatarim); });
+                socket.on('connect', () => { 
+                    if (benimAvatarim) {
+                        socket.emit('avatarGuncelle', benimAvatarim); 
+                    }
+                });
 
                 const canvas = document.getElementById('arena');
                 const ctx = canvas.getContext('2d');
@@ -620,13 +624,18 @@ app.get('/oyun-alani', (req, res) => {
                                 img.src = p.avatarData;
                                 loadedImages[id] = img;
                             }
-                            if (img.complete) {
+                            if (img.complete && img.naturalWidth !== 0) {
                                 ctx.save();
                                 ctx.beginPath();
                                 ctx.arc(0, 0, 20, 0, Math.PI * 2);
                                 ctx.clip();
                                 ctx.drawImage(img, -20, -20, 40, 40);
                                 ctx.restore();
+                            } else {
+                                ctx.fillStyle = '#FFD700';
+                                ctx.beginPath();
+                                ctx.arc(0, 0, 20, 0, Math.PI * 2);
+                                ctx.fill();
                             }
                         } else {
                             ctx.fillStyle = '#FFD700';
@@ -668,12 +677,11 @@ io.on('connection', (socket) => {
     };
 
     socket.on('avatarGuncelle', (avatar) => {
-        if(aktifOyuncular[socket.id]) {
+        if(aktifOyuncular[socket.id] && avatar) {
             aktifOyuncular[socket.id].avatarData = avatar;
         }
     });
 
-    // DÜZELTME BURADA: 'hareketEst' yerine doğru olan 'hareketEt' yapıldı
     socket.on('hareketEt', (h) => {
         let p = aktifOyuncular[socket.id];
         if(!p) return;
@@ -756,7 +764,7 @@ setInterval(() => {
                         p.y = sp.y;
                         if(aktifOyuncular[m.id]) {
                             aktifOyuncular[m.id].skor += 1;
-                            io.emit('olumBildirimi', `${aktifOyuncular[m.id].isim}, ${p.isim}'i avladı!`);
+                            io.emit('olumBildirimi', `${aktifOyuncular[m.id].isim}, ${p.isim}'i avladı!`, id);
                         }
                     }
                     break;
