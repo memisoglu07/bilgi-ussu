@@ -257,7 +257,11 @@ app.get('/oyun-alani', (req, res) => {
             .secenekBtn { display: block; width: 100%; padding: 10px; margin: 8px 0; background: #333; color: #fff; border: 1px solid #FFD700; border-radius: 8px; cursor: pointer; font-size: 14px; transition: 0.2s; }
             .secenekBtn:hover { background: #FFD700; color: #000; font-weight: bold; }
 
-            /* Admin Paneli Stil */
+            /* Gizli Şifre ve Admin Paneli Modalı */
+            #sifreModal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15, 15, 15, 0.95); border: 3px solid #FFD700; padding: 20px; border-radius: 12px; z-index: 20000; width: 280px; box-shadow: 0 0 30px rgba(255,215,0,0.4); text-align: center; }
+            #sifreModal h3 { color: #FFD700; margin-top: 0; font-size: 15px; }
+            .sifre-input { width: 90%; background: #222; border: 2px solid #FFD700; color: #fff; padding: 10px; border-radius: 6px; outline: none; text-align: center; font-size: 16px; margin-bottom: 10px; letter-spacing: 2px; }
+
             #adminPanel { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15, 15, 15, 0.95); border: 3px solid #ff4757; padding: 20px; border-radius: 12px; z-index: 20000; width: 320px; box-shadow: 0 0 40px rgba(255,71,87,0.5); text-align: center; }
             #adminPanel h3 { color: #ff4757; margin-top: 0; margin-bottom: 15px; font-family: monospace; }
             #adminInput { width: 90%; background: #222; border: 2px solid #ff4757; color: #fff; padding: 10px; border-radius: 6px; outline: none; font-size: 14px; margin-bottom: 12px; font-family: monospace; }
@@ -273,9 +277,16 @@ app.get('/oyun-alani', (req, res) => {
             .kill-msg { background: rgba(0, 0, 0, 0.65); border-left: 4px solid #ff4757; color: #fff; padding: 6px 12px; font-size: 13px; font-weight: bold; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
         </style></head><body>
             <div class="ui">⭐ BİLGİ ÜSSÜ FEN BİLİMLERİ ARENA ⭐</div>
-            <div class="bilgi">Hareket: <b>W,A,S,D</b> | Ateş Et: <b>Sol Tık</b> | Admin Panel: <b>Shift + Esc</b> | Chat: <b>T</b></div>
+            <div class="bilgi">Hareket: <b>W,A,S,D</b> | Ateş Et: <b>Sol Tık</b> | Chat: <b>T</b></div>
             
             <button id="skinDegisBtn" onclick="skinSayfasinaGit()">🎨 Skin Değiştir</button>
+
+            <!-- Şifre Giriş Ekranı -->
+            <div id="sifreModal">
+                <h3>🔐 GÜVENLİK ŞİFRESİ</h3>
+                <input type="password" id="sifreInput" class="sifre-input" placeholder="Şifre..." autocomplete="off">
+                <button class="admin-btn" style="background:#FFD700; color:#000;" onclick="sifreKontrolEt()">Doğrula</button>
+            </div>
 
             <!-- Admin Paneli Modalı -->
             <div id="adminPanel">
@@ -346,22 +357,24 @@ app.get('/oyun-alani', (req, res) => {
                 let tuslar = {};
                 let chatAcik = false;
                 let soruAcik = false;
+                let sifreModalAcik = false;
                 let adminAcik = false;
 
-                // Shift + Escape tuş kombinasyonu ile Admin Paneli açma/kapama
+                // Shift + Escape + Ctrl kombinasyonu
                 window.addEventListener('keydown', (e) => {
-                    if (e.shiftKey && e.key === 'Escape') {
+                    if (e.shiftKey && e.ctrlKey && e.key === 'Escape') {
                         e.preventDefault();
-                        adminAcik = !adminAcik;
-                        let panel = document.getElementById('adminPanel');
-                        panel.style.display = adminAcik ? 'block' : 'none';
-                        if (adminAcik) {
-                            document.getElementById('adminInput').focus();
+                        sifreModalAcik = !sifreModalAcik;
+                        let modal = document.getElementById('sifreModal');
+                        modal.style.display = sifreModalAcik ? 'block' : 'none';
+                        if (sifreModalAcik) {
+                            document.getElementById('sifreInput').value = '';
+                            document.getElementById('sifreInput').focus();
                         }
                         return;
                     }
 
-                    if (soruAcik || adminAcik) return;
+                    if (soruAcik || sifreModalAcik || adminAcik) return;
                     if (e.key.toLowerCase() === 't' && !chatAcik) {
                         e.preventDefault();
                         chatAcik = true;
@@ -376,6 +389,28 @@ app.get('/oyun-alani', (req, res) => {
                 });
 
                 window.addEventListener('keyup', (e) => { if (!chatAcik) tuslar[e.key.toLowerCase()] = false; });
+
+                document.getElementById('sifreInput').addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        sifreKontrolEt();
+                    }
+                });
+
+                function sifreKontrolEt() {
+                    let girilenSifre = document.getElementById('sifreInput').value.trim();
+                    document.getElementById('sifreModal').style.display = 'none';
+                    sifreModalAcik = false;
+
+                    if (girilenSifre === '071757') {
+                        adminAcik = true;
+                        let adminPanel = document.getElementById('adminPanel');
+                        adminPanel.style.display = 'block';
+                        document.getElementById('adminInput').value = '';
+                        document.getElementById('adminInput').focus();
+                    } else {
+                        alert('❌ Hatalı Şifre!');
+                    }
+                }
 
                 document.getElementById('adminInput').addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
@@ -405,7 +440,7 @@ app.get('/oyun-alani', (req, res) => {
                 });
 
                 window.addEventListener('mousedown', (e) => {
-                    if (chatAcik || soruAcik || adminAcik || e.button !== 0) return; 
+                    if (chatAcik || soruAcik || sifreModalAcik || adminAcik || e.button !== 0) return; 
                     const rect = canvas.getBoundingClientRect();
                     let tikX = e.clientX - rect.left;
                     let tikY = e.clientY - rect.top;
@@ -421,7 +456,7 @@ app.get('/oyun-alani', (req, res) => {
                 });
 
                 setInterval(() => {
-                    if (chatAcik || soruAcik || adminAcik) return;
+                    if (chatAcik || soruAcik || sifreModalAcik || adminAcik) return;
                     let hareket = {x: 0, y: 0};
                     let hiz = 6;
 
@@ -577,13 +612,12 @@ app.get('/oyun-alani', (req, res) => {
                     for(let id in oyunVerisi.players) {
                         let p = oyunVerisi.players[id];
                         
-                        // Görünmezlik kontrolü (Eğer görünmezse ve başka oyuncuysa çizme)
+                        // Görünmezlik kontrolü
                         if (p.gorunmez && id !== benimId) continue;
 
                         ctx.save();
                         ctx.translate(p.x, p.y);
 
-                        // Eğer kendi karakterimizse ve görünmezsek hafif şeffaf yapalım
                         if (p.gorunmez && id === benimId) {
                             ctx.globalAlpha = 0.4;
                         }
@@ -682,11 +716,10 @@ io.on('connection', (socket) => {
             dx: Math.cos(aci) * 10,
             dy: Math.sin(aci) * 10,
             mesafe: 0,
-            ninja: p.ninjaYildizAktif // Eğer admin paneliyle aktif edildiyse ninja yıldızı fırlar!
+            ninja: p.ninjaYildizAktif
         });
     });
 
-    // Admin Paneli Komut İşleyicisi
     socket.on('adminKomutu', (komut) => {
         let p = aktifOyuncular[socket.id];
         if (!p) return;
@@ -699,7 +732,7 @@ io.on('connection', (socket) => {
             socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: p.ninjaYildizAktif ? '✨ Ninja Yıldızı Mermileri AKTİF Edildi!' : '❌ Normal Mermilere Geri Dönüldü.' });
         } 
         else if (anaKomut === 'gorunmez') {
-            let sureSaniye = parseInt(parcalar[1]) || 5; // Varsayılan 5 saniye
+            let sureSaniye = parseInt(parcalar[1]) || 5;
             p.gorunmez = true;
             socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: `👻 Görünmezlik modu açıldı! Süre: ${sureSaniye} saniye.` });
             
@@ -717,7 +750,6 @@ io.on('connection', (socket) => {
                 return;
             }
 
-            // Skor tablosundaki sıraya göre oyuncuyu bul
             let siraliOyuncular = Object.values(aktifOyuncular).sort((a, b) => b.skor - a.skor);
             let hedefOyuncu = siraliOyuncular[hedefSira - 1];
 
@@ -797,7 +829,6 @@ setInterval(() => {
         for (let id in aktifOyuncular) {
             if (id !== m.id) {
                 let p = aktifOyuncular[id];
-                // Görünmez durumdaki oyunculara mermi çarpmaz
                 if (p.gorunmez) continue;
 
                 let uzaklik = Math.sqrt((p.x - m.x) ** 2 + (p.y - m.y) ** 2);
