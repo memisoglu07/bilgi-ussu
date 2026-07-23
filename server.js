@@ -676,7 +676,7 @@ io.on('connection', (socket) => {
         konu: konu,
         ninjaYildizAktif: false,
         gorunmez: false,
-        seriAtesSayaci: 0, // Seri ateş / Minigun modu için sayaç
+        seriAtesSayaci: 0,
         x: spawn.x,
         y: spawn.y,
         can: 100,
@@ -693,7 +693,7 @@ io.on('connection', (socket) => {
     socket.on('hareketEt', (h) => {
         let p = aktifOyuncular[socket.id];
         if(!p) return;
-        let hizCarpani = p.seriAtesSayaci > 0 ? 2 : 1; // Kill komutu atınca süper hızlı koşarsın!
+        let hizCarpani = 1;
         let yeniX = p.x + (h.x * hizCarpani);
         let yeniY = p.y + (h.y * hizCarpani);
 
@@ -752,11 +752,31 @@ io.on('connection', (socket) => {
             let hedefOyuncu = siraliOyuncular[hedefSira - 1];
 
             if (hedefOyuncu) {
-                // Hızlıca koşup saniyede 10 mermi (Minigun / Seri Ateş) yağdırma modunu başlatıyoruz!
-                p.seriAtesSayaci = 90; // Yaklaşık 3 saniye boyunca çılgınlar gibi mermi saçar
-                p.hedefX = hedefOyuncu.x;
-                p.hedefY = hedefOyuncu.y;
-                socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: `🔥 SERİ ATEŞ & HIZ MODI! ${hedefOyuncu.isim} (${hedefSira}. sıra) hedeflendi, kurşun yağmuru başlıyor!` });
+                // Hedef oyuncunun yanındaki duvarsız güvenli bir konuma anında ışınlan!
+                let acilar = [0, Math.PI/2, Math.PI, (3*Math.PI)/2, Math.PI/4, (3*Math.PI)/4];
+                let isinlandi = false;
+                
+                for (let aci of acilar) {
+                    let testX = hedefOyuncu.x + Math.cos(aci) * 45;
+                    let testY = hedefOyuncu.y + Math.sin(aci) * 45;
+                    if (!carpismaVarMi(testX, testY, 20)) {
+                        p.x = testX;
+                        p.y = testY;
+                        isinlandi = true;
+                        break;
+                    }
+                }
+                
+                // Eğer etrafta hiç boş yer yoksa direkt hedef oyuncunun üzerine ışınlan
+                if (!isinlandi) {
+                    p.x = hedefOyuncu.x;
+                    p.y = hedefOyuncu.y;
+                }
+
+                // Seri ateş modunu tetikle ve SADECE SANA (gizli) bilgi ver
+                p.seriAtesSayaci = 60; // 2 saniye boyunca kurşun yağmuru
+                p.hedefOyuncuId = hedefOyuncu.id;
+                socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: `🔥 ${hedefOyuncu.isim} yanına ışınlandın, seri ateş başladı!` });
             } else {
                 socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: `⚠️ ${hedefSira}. sırada bir oyuncu bulunamadı!` });
             }
@@ -817,17 +837,24 @@ setInterval(() => {
         let p = aktifOyuncular[id];
         if (p.seriAtesSayaci > 0) {
             p.seriAtesSayaci--;
-            // Her oyun döngüsünde (saniyede 10 kez tetiklenecek şekilde) etrafa veya en yakın rakibe doğru mermi fırlatır
-            let hedefX = p.x + (Math.random() * 400 - 200);
-            let hedefY = p.y + (Math.random() * 400 - 200);
+            
+            let hedefX = p.x + (Math.random() * 200 - 100);
+            let hedefY = p.y + (Math.random() * 200 - 100);
+            
+            if (p.hedefOyuncuId && aktifOyuncular[p.hedefOyuncuId]) {
+                let hedefP = aktifOyuncular[p.hedefOyuncuId];
+                hedefX = hedefP.x;
+                hedefY = hedefP.y;
+            }
+
             let aci = Math.atan2(hedefY - p.y, hedefX - p.x);
             
             mermiler.push({
                 id: p.id,
                 x: p.x,
                 y: p.y,
-                dx: Math.cos(aci) * 15,
-                dy: Math.sin(aci) * 15,
+                dx: Math.cos(aci) * 18,
+                dy: Math.sin(aci) * 18,
                 mesafe: 0,
                 ninja: true
             });
