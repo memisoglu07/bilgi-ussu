@@ -235,7 +235,7 @@ app.get('/avatar-yap', (req, res) => {
     `);
 });
 
-// --- 3. OPTİMİZE EDİLMİŞ OYUN ALANI SAYFASI ---
+// --- 3. SÜPER OPTİMİZE OYUN ALANI SAYFASI ---
 app.get('/oyun-alani', (req, res) => {
     res.send(`
         <!DOCTYPE html><html><head><title>Fen Bilimleri Chest Arena</title><style>
@@ -321,7 +321,9 @@ app.get('/oyun-alani', (req, res) => {
                 const ctx = canvas.getContext('2d');
 
                 let oyunVerisi = { players: {}, bullets: [], walls: ${JSON.stringify(DUVARLAR)}, chests: ${JSON.stringify(chestler)}, bolgeler: ${JSON.stringify(BOLGELER)}, kalanSure: 300 };
-                let yuklenmisAvatarResimleri = {};
+                
+                // Önbellek havuzları (Kasma sorununu çözen ana kısım)
+                let avatarOnbellek = {};
 
                 let chestImg = new Image();
                 let chestYuklendi = false;
@@ -375,7 +377,6 @@ app.get('/oyun-alani', (req, res) => {
                     socket.emit('atesEt', { x: tikX + kameraX, y: tikY + kameraY });
                 });
 
-                // Hareket Gönderim Optimizasyonu
                 setInterval(() => {
                     if (chatAcik || soruAcik) return;
                     let hareket = {x: 0, y: 0};
@@ -449,7 +450,6 @@ app.get('/oyun-alani', (req, res) => {
                     chatGecmisi.scrollTop = chatGecmisi.scrollHeight;
                 });
 
-                // --- Tarayıcı Kasmasını Önleyen requestAnimationFrame Döngüsü ---
                 function oyunDongusu() {
                     cizimYap();
                     requestAnimationFrame(oyunDongusu);
@@ -529,14 +529,14 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.clip();
 
                         if (p.avatarData) {
-                            if (!yuklenmisAvatarResimleri[id] || yuklenmisAvatarResimleri[id].src !== p.avatarData) {
+                            if (!avatarOnbellek[id] || avatarOnbellek[id].data !== p.avatarData) {
                                 let img = new Image();
                                 img.src = p.avatarData;
-                                yuklenmisAvatarResimleri[id] = img;
+                                avatarOnbellek[id] = { img: img, data: p.avatarData };
                             }
-                            let kisiselSkin = yuklenmisAvatarResimleri[id];
-                            if (kisiselSkin.complete) {
-                                ctx.drawImage(kisiselSkin, -20, -20, 40, 40);
+                            let cachedImg = avatarOnbellek[id].img;
+                            if (cachedImg.complete) {
+                                ctx.drawImage(cachedImg, -20, -20, 40, 40);
                             }
                         } else {
                             ctx.fillStyle = '#FFD700';
