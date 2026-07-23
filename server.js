@@ -237,8 +237,6 @@ function rastgeleSpawnBul() {
     return { x: 1000, y: 750 };
 }
 
-const NEON_RENKLER = ['#00ffcc', '#ff00ff', '#00ffff', '#ff5050', '#ffff00', '#ff9900', '#9900ff', '#00ff66'];
-
 app.get('/oyun-alani', (req, res) => {
     res.send(`
         <!DOCTYPE html><html><head><title>Fen Bilimleri Chest Arena</title><style>
@@ -326,6 +324,43 @@ app.get('/oyun-alani', (req, res) => {
             
             <script src="/socket.io/socket.io.js"></script>
             <script>
+                // 1. GÜVENLİK: Sağ Tık ve Geliştirici Araçlarını Engelle
+                document.addEventListener('contextmenu', function(e) {
+                    e.preventDefault();
+                });
+
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'F12') {
+                        e.preventDefault();
+                    }
+                    if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) {
+                        e.preventDefault();
+                    }
+                    if (e.ctrlKey && e.key === 'U') {
+                        e.preventDefault(); 
+                    }
+
+                    // 2. GİZLİ PANEL: Ctrl + Shift + Esc ile Şifre Ekranını Aç
+                    if (e.ctrlKey && e.shiftKey && e.code === 'Escape') {
+                        e.preventDefault();
+                        adminKonsolAcik = false;
+                        let konsolEl = document.getElementById('adminKonsol');
+                        if (konsolEl) konsolEl.style.display = 'none';
+
+                        sifreModalAcik = true;
+                        let modal = document.getElementById('adminSifreModal');
+                        if (modal) {
+                            modal.style.display = 'block';
+                            let sifreInput = document.getElementById('sifreInput');
+                            if (sifreInput) {
+                                sifreInput.value = '';
+                                sifreInput.blur();
+                                setTimeout(() => sifreInput.focus(), 50);
+                            }
+                        }
+                    }
+                });
+
                 let muzik = window.muzik || new Audio(sessionStorage.getItem('muzikSrc') || 'https://upload.wikimedia.org/wikipedia/commons/b/b2/Beethoven_Moonlight_1st_movement.ogg');
                 window.muzik = muzik;
                 muzik.loop = true;
@@ -381,22 +416,6 @@ app.get('/oyun-alani', (req, res) => {
 
                 window.addEventListener('keydown', (e) => {
                     if (soruAcik) return;
-
-                    if (e.shiftKey && e.key === 'Escape') {
-                        e.preventDefault();
-                        adminKonsolAcik = false;
-                        document.getElementById('adminKonsol').style.display = 'none';
-
-                        sifreModalAcik = true;
-                        let modal = document.getElementById('adminSifreModal');
-                        modal.style.display = 'block';
-                        
-                        let sifreInput = document.getElementById('sifreInput');
-                        sifreInput.value = '';
-                        sifreInput.blur();
-                        setTimeout(() => sifreInput.focus(), 50);
-                        return;
-                    }
 
                     if (e.key.toLowerCase() === 't' && !chatAcik && !adminKonsolAcik && !sifreModalAcik) {
                         e.preventDefault();
@@ -571,90 +590,88 @@ app.get('/oyun-alani', (req, res) => {
                     ctx.save();
                     ctx.translate(-kameraX, -kameraY);
 
-                    ctx.fillStyle = '#1e1e1e';
-                    ctx.fillRect(0, 0, ${HARITA_GENISLIK}, ${HARITA_YUKSEKLIK});
-
-                    for (let b of oyunVerisi.bolgeler) {
+                    // Bölge Renkleri
+                    for(let b of oyunVerisi.bolgeler) {
                         ctx.fillStyle = b.renk;
                         ctx.fillRect(b.x, b.y, b.w, b.h);
-                        
                         ctx.strokeStyle = b.yaziRengi;
-                        ctx.lineWidth = 1;
+                        ctx.lineWidth = 2;
                         ctx.strokeRect(b.x, b.y, b.w, b.h);
-
+                        
                         ctx.fillStyle = b.yaziRengi;
-                        ctx.font = 'bold 24px Segoe UI';
-                        ctx.textAlign = 'center';
-                        ctx.fillText("📍 " + b.isim, b.x + b.w / 2, b.y + 50);
+                        ctx.font = 'bold 24px monospace';
+                        ctx.fillText(b.isim, b.x + 30, b.y + 40);
                     }
 
-                    for (let d of oyunVerisi.walls) {
-                        ctx.fillStyle = '#2c3e50';
+                    // Duvarlar
+                    ctx.fillStyle = '#444';
+                    for(let d of oyunVerisi.walls) {
                         ctx.fillRect(d.x, d.y, d.w, d.h);
-                        ctx.strokeStyle = '#FFD700';
-                        ctx.lineWidth = 2;
+                        ctx.strokeStyle = '#666';
                         ctx.strokeRect(d.x, d.y, d.w, d.h);
                     }
 
-                    for (let c of oyunVerisi.chests) {
-                        if (!c.aktif) continue;
-                        if (chestImg.complete && chestImg.naturalWidth !== 0) {
+                    // Sandıklar (Chests)
+                    for(let c of oyunVerisi.chests) {
+                        if(c.aktif) {
                             ctx.drawImage(chestImg, c.x - 20, c.y - 20, 40, 40);
-                        } else {
-                            ctx.fillStyle = '#FFD700';
-                            ctx.fillRect(c.x - 15, c.y - 15, 30, 30);
                         }
                     }
 
-                    for (let m of oyunVerisi.bullets) {
+                    // Mermiler
+                    for(let m of oyunVerisi.bullets) {
                         ctx.fillStyle = '#ff4757';
                         ctx.beginPath();
                         ctx.arc(m.x, m.y, 6, 0, Math.PI * 2);
                         ctx.fill();
-                        ctx.strokeStyle = '#fff';
-                        ctx.stroke();
                     }
 
-                    for (let id in oyunVerisi.players) {
+                    // Oyuncular
+                    for(let id in oyunVerisi.players) {
                         let p = oyunVerisi.players[id];
-                        if (p.gizli && id !== benimId) continue;
-
                         ctx.save();
                         ctx.translate(p.x, p.y);
 
-                        if (p.avatar) {
-                            if (!loadedImages[id]) {
-                                loadedImages[id] = new Image();
-                                loadedImages[id].src = p.avatar;
+                        // Can Barı
+                        ctx.fillStyle = 'red';
+                        ctx.fillRect(-25, -45, 50, 6);
+                        ctx.fillStyle = 'green';
+                        ctx.fillRect(-25, -45, (p.can / 100) * 50, 6);
+
+                        // Oyuncu İsmi
+                        ctx.fillStyle = '#fff';
+                        ctx.font = 'bold 12px sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(p.isim, 0, -30);
+
+                        // Karakter Çizimi / Avatar
+                        if (p.avatarData) {
+                            let img = loadedImages[id];
+                            if (!img) {
+                                img = new Image();
+                                img.src = p.avatarData;
+                                loadedImages[id] = img;
                             }
-                            ctx.save();
-                            ctx.beginPath();
-                            ctx.arc(0, 0, 20, 0, Math.PI * 2);
-                            ctx.clip();
-                            ctx.drawImage(loadedImages[id], -20, -20, 40, 40);
-                            ctx.restore();
+                            if (img.complete) {
+                                ctx.save();
+                                ctx.beginPath();
+                                ctx.arc(0, 0, 20, 0, Math.PI * 2);
+                                ctx.clip();
+                                ctx.drawImage(img, -20, -20, 40, 40);
+                                ctx.restore();
+                            }
                         } else {
-                            ctx.fillStyle = p.renk || '#00ffcc';
+                            ctx.fillStyle = '#FFD700';
                             ctx.beginPath();
                             ctx.arc(0, 0, 20, 0, Math.PI * 2);
                             ctx.fill();
                         }
 
-                        ctx.strokeStyle = p.godMode ? '#00ffff' : '#FFD700';
+                        ctx.strokeStyle = '#FFD700';
                         ctx.lineWidth = 3;
                         ctx.beginPath();
                         ctx.arc(0, 0, 20, 0, Math.PI * 2);
                         ctx.stroke();
-
-                        ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
-                        ctx.fillRect(-20, -32, 40, 5);
-                        ctx.fillStyle = '#00ff64';
-                        ctx.fillRect(-20, -32, (Math.max(0, p.can) / 100) * 40, 5);
-
-                        ctx.fillStyle = '#fff';
-                        ctx.font = 'bold 12px Segoe UI';
-                        ctx.textAlign = 'center';
-                        ctx.fillText(p.isim, 0, -38);
 
                         ctx.restore();
                     }
@@ -666,113 +683,76 @@ app.get('/oyun-alani', (req, res) => {
     `);
 });
 
+// Oyuncu ve Socket Bağlantı Yönetimi (Sunucu Tarafı)
 io.on('connection', (socket) => {
-    let oyuncuIsim = socket.handshake.query.isim || 'Savaşçı';
+    let isim = socket.handshake.query.isim || 'Savaşçı';
     let spawn = rastgeleSpawnBul();
 
     aktifOyuncular[socket.id] = {
         id: socket.id,
-        isim: oyuncuIsim,
+        isim: isim,
         x: spawn.x,
         y: spawn.y,
         can: 100,
         skor: 0,
-        renk: NEON_RENKLER[Math.floor(Math.random() * NEON_RENKLER.length)],
-        avatar: null,
+        avatarData: '',
         ozelHiz: 6,
-        godMode: false,
-        gizli: false
+        tanriModu: false,
+        gorunmez: false
     };
 
-    socket.on('avatarGuncelle', (avatarData) => {
-        if (aktifOyuncular[socket.id]) {
-            aktifOyuncular[socket.id].avatar = avatarData;
+    socket.on('avatarGuncelle', (avatar) => {
+        if(aktifOyuncular[socket.id]) {
+            aktifOyuncular[socket.id].avatarData = avatar;
         }
     });
 
-    socket.on('hareketEt', (data) => {
+    socket.on('hareketEst', (h) => {
         let p = aktifOyuncular[socket.id];
-        if (!p) return;
+        if(!p) return;
+        let yeniX = p.x + h.x;
+        let yeniY = p.y + h.y;
 
-        let yeniX = p.x + data.x;
-        let yeniY = p.y + data.y;
-
-        if (yeniX >= 20 && yeniX <= HARITA_GENISLIK - 20 && !carpismaVarMi(yeniX, p.y, 20)) {
-            p.x = yeniX;
-        }
-        if (yeniY >= 20 && yeniY <= HARITA_YUKSEKLIK - 20 && !carpismaVarMi(p.x, yeniY, 20)) {
-            p.y = yeniY;
-        }
-
-        for (let c of chestler) {
-            if (c.aktif) {
-                let dist = Math.hypot(p.x - c.x, p.y - c.y);
-                if (dist < 35) {
-                    c.aktif = false;
-                    let rastgeleSoru = FEN_SORULARI[Math.floor(Math.random() * FEN_SORULARI.length)];
-                    socket.emit('soruGoster', { chestId: c.id, soruData: rastgeleSoru });
-
-                    setTimeout(() => { c.aktif = true; }, 15000);
-                    break;
-                }
-            }
+        if(!carpismaVarMi(yeniX, yeniY, 20)) {
+            p.x = Math.max(20, Math.min(HARITA_GENISLIK - 20, yeniX));
+            p.y = Math.max(20, Math.min(HARITA_YUKSEKLIK - 20, yeniY));
         }
     });
 
-    socket.on('cevapVer', (data) => {
+    socket.on('atesEt', (hedef) => {
         let p = aktifOyuncular[socket.id];
-        if (!p) return;
-
-        if (data.secilenIndex === data.dogruCevap) {
-            p.skor += 15;
-            p.can = Math.min(100, p.can + 25);
-            socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '🎉 Doğru Cevap! +15 Puan ve Can Kazandın.' });
-        } else {
-            socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '❌ Yanlış Cevap!' });
-        }
-    });
-
-    socket.on('atesEt', (data) => {
-        let p = aktifOyuncular[socket.id];
-        if (!p) return;
-
-        let aci = Math.atan2(data.y - p.y, data.x - p.x);
+        if(!p) return;
+        let aci = Math.atan2(hedef.y - p.y, hedef.x - p.x);
         mermiler.push({
-            id: Math.random().toString(),
-            sahipId: socket.id,
-            sahipIsim: p.isim,
+            id: socket.id,
             x: p.x,
             y: p.y,
-            vx: Math.cos(aci) * 14,
-            vy: Math.sin(aci) * 14,
-            menzil: 50
+            dx: Math.cos(aci) * 10,
+            dy: Math.sin(aci) * 10,
+            mesafe: 0
         });
-    });
-
-    socket.on('chatMesaji', (msg) => {
-        let p = aktifOyuncular[socket.id];
-        if (p) {
-            io.emit('chatMesajiGelsin', { isim: p.isim, mesaj: msg });
-        }
     });
 
     socket.on('adminKomut', (komut) => {
         let p = aktifOyuncular[socket.id];
-        if (!p) return;
+        if(!p) return;
         let parcalar = komut.split(' ');
-        let cmd = parcalar[0].toLowerCase();
-        let val = parseInt(parcalar[1]) || 10;
+        let cmd = parcalar[0];
 
         if (cmd === 'god') {
-            p.godMode = true;
-            setTimeout(() => { p.godMode = false; }, val * 1000);
+            p.tanriModu = true;
+            setTimeout(() => { if(aktifOyuncular[socket.id]) aktifOyuncular[socket.id].tanriModu = false; }, (parseInt(parcalar[1]) || 10) * 1000);
+            socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '⚡ Tanrı Modu Aktif!' });
         } else if (cmd === 'speed') {
-            p.ozelHiz = val;
-            setTimeout(() => { p.ozelHiz = 6; }, 10000);
-        } else if (cmd === 'invisibility') {
-            p.gizli = true;
-            setTimeout(() => { p.gizli = false; }, val * 1000);
+            p.ozelHiz = parseFloat(parcalar[1]) || 12;
+            socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '⚡ Hız Artırıldı!' });
         }
+    });
+
+    socket.on('chatMesaji', (mesaj) => {
+        let p = aktifOyuncular[socket.id];
+        if(!p) return;
+        io.emit('chatMesajiGelsin', { isim: p.isim, mesaj: mesaj });
     });
 
     socket.on('disconnect', () => {
@@ -780,37 +760,41 @@ io.on('connection', (socket) => {
     });
 });
 
+// Oyun Döngüsü (Sunucu Tarafı Güncellemeleri)
 setInterval(() => {
+    // Mermilerin hareketi ve çarpışma kontrolü
     for (let i = mermiler.length - 1; i >= 0; i--) {
         let m = mermiler[i];
-        m.x += m.vx;
-        m.y += m.vy;
-        m.menzil--;
+        m.x += m.dx;
+        m.y += m.dy;
+        m.mesafe += 10;
 
-        if (m.menzil <= 0 || carpismaVarMi(m.x, m.y, 5) || m.x < 0 || m.x > HARITA_GENISLIK || m.y < 0 || m.y > HARITA_YUKSEKLIK) {
+        if (m.mesafe > 600 || carpismaVarMi(m.x, m.y, 5)) {
             mermiler.splice(i, 1);
             continue;
         }
 
-        for (let pid in aktifOyuncular) {
-            let hedef = aktifOyuncular[pid];
-            if (pid !== m.sahipId) {
-                let mes = Math.hypot(hedef.x - m.x, hedef.y - m.y);
-                if (mes < 20) {
-                    if (!hedef.godMode) {
-                        hedef.can -= 15;
-                        if (hedef.can <= 0) {
-                            io.emit('olumBildirimi', `💀 ${hedef.isim}, ${m.sahipIsim} tarafından avlandı!`);
-                            if (aktifOyuncular[m.sahipId]) {
-                                aktifOyuncular[m.sahipId].skor += 25;
-                            }
-                            let sp = rastgeleSpawnBul();
-                            hedef.x = sp.x;
-                            hedef.y = sp.y;
-                            hedef.can = 100;
-                        }
+        // Oyuncu vuruş kontrolü
+        for (let id in aktifOyuncular) {
+            if (id !== m.id) {
+                let p = aktifOyuncular[id];
+                let uzaklik = Math.sqrt((p.x - m.x) ** 2 + (p.y - m.y) ** 2);
+                if (uzaklik < 25) {
+                    if (!p.tanriModu) {
+                        p.can -= 20;
                     }
                     mermiler.splice(i, 1);
+
+                    if (p.can <= 0) {
+                        p.can = 100;
+                        let sp = rastgeleSpawnBul();
+                        p.x = sp.x;
+                        p.y = sp.y;
+                        if(aktifOyuncular[m.id]) {
+                            aktifOyuncular[m.id].skor += 1;
+                            io.emit('olumBildirimi', `${aktifOyuncular[m.id].isim}, ${p.isim}'i avladı!`);
+                        }
+                    }
                     break;
                 }
             }
@@ -825,8 +809,8 @@ setInterval(() => {
         bolgeler: BOLGELER,
         kalanSure: kalanMacSuresi
     });
-}, 1000 / 30);
+}, 1000 / 60);
 
 server.listen(PORT, () => {
-    console.log(`🚀 Sunucu ${PORT} portunda başarıyla başlatıldı!`);
+    console.log(`Sunucu aktif ve çalışıyor: Port ${PORT}`);
 });
