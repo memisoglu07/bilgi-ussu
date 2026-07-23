@@ -83,17 +83,20 @@ app.get('/', (req, res) => {
     res.send(`
         <!DOCTYPE html><html><head><title>Giriş - Fen Arena</title><style>
             body { background: #0f0f0f; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-            .kutusu { background: #181818; border: 2px solid #FFD700; padding: 30px; border-radius: 12px; text-align: center; box-shadow: 0 0 20px rgba(255,215,0,0.3); width: 320px; }
+            .kutusu { background: #181818; border: 2px solid #FFD700; padding: 30px; border-radius: 12px; text-align: center; box-shadow: 0 0 20px rgba(255,215,0,0.3); width: 340px; }
             input, select, button { padding: 12px; margin-top: 12px; width: 90%; border-radius: 6px; border: none; font-size: 15px; }
             input, select { background: #333; color: #fff; border: 1px solid #FFD700; outline: none; }
             button { background: #FFD700; color: #000; font-weight: bold; cursor: pointer; transition: 0.2s; }
             button:hover { background: #fff; transform: scale(1.05); }
             label { font-size: 13px; color: #aaa; display: block; text-align: left; margin-top: 8px; }
+            .yt-btn { background: #ff0000; color: #fff; font-size: 13px; margin-top: 10px; }
+            .yt-btn:hover { background: #ff3333; color: #fff; }
+            .abone-bilgi { font-size: 11px; color: #2ed573; margin-top: 5px; display: none; font-weight: bold; }
         </style></head><body>
             <div class="kutusu">
                 <h2>⚡ FEN ARENA ⚡</h2>
                 <label>Savaşçı Adı:</label>
-                <input type="text" id="isimInput" placeholder="Adını gir..." maxlength="15">
+                <input type="text" id="isimInput" placeholder="Adını gir..." maxlength="15" value="YTS07">
                 
                 <label>Fen Bilimleri Konusu:</label>
                 <select id="konuSecim">
@@ -101,15 +104,33 @@ app.get('/', (req, res) => {
                     <option value="unite2">2. Ünite: Hücre ve Bölünmeler</option>
                 </select>
 
-                <button onclick="girisYap()">İleri (Kostüm Tasarla) ➔</button>
+                <button class="yt-btn" onclick="aboneOlAcistir()">🔴 @bnYTS07 Kanalına Abone Ol</button>
+                <div id="aboneBilgi" class="abone-bilgi">✅ Ninja Yıldızı Mermileri Aktif!</div>
+
+                <button onclick="girisYap()" style="margin-top: 15px;">İleri (Kostüm Tasarla) ➔</button>
             </div>
             <script>
+                let aboneMi = false;
+
+                function aboneOlAcistir() {
+                    window.open('https://www.youtube.com/@bnYTS07', '_blank');
+                    aboneMi = true;
+                    document.getElementById('aboneBilgi').style.display = 'block';
+                    localStorage.setItem('yts07_abone', 'true');
+                }
+
+                if(localStorage.getItem('yts07_abone') === 'true') {
+                    aboneMi = true;
+                    document.getElementById('aboneBilgi').style.display = 'block';
+                }
+
                 function girisYap() {
                     const isim = document.getElementById('isimInput').value.trim();
                     const konu = document.getElementById('konuSecim').value;
                     if(isim) {
                         sessionStorage.setItem('oyuncuIsim', isim);
                         sessionStorage.setItem('oyuncuKonu', konu);
+                        sessionStorage.setItem('oyuncuAbone', aboneMi ? 'true' : 'false');
                         window.location.href = '/avatar-yap';
                     } else { alert('Lütfen bir isim girin!'); }
                 }
@@ -307,8 +328,9 @@ app.get('/oyun-alani', (req, res) => {
                 const isim = sessionStorage.getItem('oyuncuIsim') || 'Savaşçı';
                 const konu = sessionStorage.getItem('oyuncuKonu') || 'unite1';
                 const avatar = sessionStorage.getItem('oyuncuAvatar') || '';
+                const aboneMi = sessionStorage.getItem('oyuncuAbone') === 'true';
 
-                const socket = io({ query: { isim: isim, konu: konu } });
+                const socket = io({ query: { isim: isim, konu: konu, abone: aboneMi ? '1' : '0' } });
 
                 socket.on('connect', () => {
                     if(avatar) socket.emit('avatarGuncelle', avatar);
@@ -376,7 +398,6 @@ app.get('/oyun-alani', (req, res) => {
                     socket.emit('atesEt', { x: tikX + kameraX, y: tikY + kameraY });
                 });
 
-                // Hareketleri azaltıp sunucuyu rahatlatıyoruz (30fps gönderim)
                 setInterval(() => {
                     if (chatAcik || soruAcik) return;
                     let hareket = {x: 0, y: 0};
@@ -501,11 +522,34 @@ app.get('/oyun-alani', (req, res) => {
                         }
                     }
 
+                    // Mermiler ve Ninja Yıldızları Çizimi
                     for(let m of oyunVerisi.bullets) {
-                        ctx.fillStyle = '#ff4757';
-                        ctx.beginPath();
-                        ctx.arc(m.x, m.y, 6, 0, Math.PI * 2);
-                        ctx.fill();
+                        ctx.save();
+                        ctx.translate(m.x, m.y);
+                        if (m.ninja) {
+                            // Fırıl fırıl dönen Ninja Yıldızı (Shuriken)
+                            ctx.rotate(Date.now() / 100);
+                            ctx.fillStyle = '#2ed573';
+                            ctx.strokeStyle = '#fff';
+                            ctx.lineWidth = 1.5;
+                            for (let i = 0; i < 4; i++) {
+                                ctx.beginPath();
+                                ctx.moveTo(0, 0);
+                                ctx.lineTo(0, -12);
+                                ctx.lineTo(6, -6);
+                                ctx.closePath();
+                                ctx.fill();
+                                ctx.stroke();
+                                ctx.rotate(Math.PI / 2);
+                            }
+                        } else {
+                            // Normal Mermi
+                            ctx.fillStyle = '#ff4757';
+                            ctx.beginPath();
+                            ctx.arc(0, 0, 6, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        ctx.restore();
                     }
 
                     for(let id in oyunVerisi.players) {
@@ -544,8 +588,8 @@ app.get('/oyun-alani', (req, res) => {
                         }
                         ctx.restore();
 
-                        ctx.strokeStyle = '#fff';
-                        ctx.lineWidth = 2;
+                        ctx.strokeStyle = p.abone ? '#2ed573' : '#fff';
+                        ctx.lineWidth = p.abone ? 3 : 2;
                         ctx.beginPath();
                         ctx.arc(0, 0, 20, 0, Math.PI * 2);
                         ctx.stroke();
@@ -563,12 +607,14 @@ app.get('/oyun-alani', (req, res) => {
 io.on('connection', (socket) => {
     let isim = socket.handshake.query.isim || 'Savaşçı';
     let konu = socket.handshake.query.konu || 'unite1';
+    let abone = socket.handshake.query.abone === '1';
     let spawn = rastgeleSpawnBul();
 
     aktifOyuncular[socket.id] = {
         id: socket.id,
         isim: isim,
         konu: konu,
+        abone: abone,
         x: spawn.x,
         y: spawn.y,
         can: 100,
@@ -604,7 +650,8 @@ io.on('connection', (socket) => {
             y: p.y,
             dx: Math.cos(aci) * 10,
             dy: Math.sin(aci) * 10,
-            mesafe: 0
+            mesafe: 0,
+            ninja: p.abone // Eğer aboneyse mermi yerine ninja yıldızı (shuriken) fırlar!
         });
     });
 
@@ -636,7 +683,6 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         delete aktifOyuncular[socket.id];
-        // Çıkan oyuncunun önbellek kalıntısını da temizleyelim ki RAM şişmesin
     });
 });
 
