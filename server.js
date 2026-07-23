@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- HARİTA VE RENKLİ BÖLGELER ---
+// --- TÜM HARİTAYI KAPLAYAN BÖLGELER VE DUVARLAR ---
 const HARITA_GENISLIK = 2000;
 const HARITA_YUKSEKLIK = 1500;
 
@@ -24,10 +24,10 @@ const DUVARLAR = [
 ];
 
 const BOLGELER = [
-    { x: 50, y: 50, w: 500, h: 400, isim: "MAVİ BÖLGE", renk: "rgba(0, 150, 255, 0.15)", yaziRengi: "#00a8ff" },
-    { x: 1300, y: 50, w: 600, h: 400, isim: "TURUNCU BÖLGE", renk: "rgba(255, 150, 0, 0.15)", yaziRengi: "#ff9f43" },
-    { x: 50, y: 1000, w: 600, h: 400, isim: "YEŞİL BÖLGE", renk: "rgba(46, 213, 115, 0.15)", yaziRengi: "#2ed573" },
-    { x: 700, y: 600, w: 500, h: 300, isim: "SİYAH ÜS", renk: "rgba(20, 20, 20, 0.4)", yaziRengi: "#a4b0be" }
+    { x: 0, y: 0, w: 1000, h: 750, isim: "MAVİ BÖLGE", renk: "rgba(0, 150, 255, 0.12)", yaziRengi: "#00a8ff" },
+    { x: 1000, y: 0, w: 1000, h: 750, isim: "TURUNCU BÖLGE", renk: "rgba(255, 150, 0, 0.12)", yaziRengi: "#ff9f43" },
+    { x: 0, y: 750, w: 1000, h: 750, isim: "YEŞİL BÖLGE", renk: "rgba(46, 213, 115, 0.12)", yaziRengi: "#2ed573" },
+    { x: 1000, y: 750, w: 1000, h: 750, isim: "SİYAH ÜS", renk: "rgba(30, 30, 30, 0.35)", yaziRengi: "#a4b0be" }
 ];
 
 let chestler = [
@@ -38,10 +38,15 @@ let chestler = [
     { id: 5, x: 1600, y: 1100, aktif: true }
 ];
 
+// Fen Bilimleri Konu / Ünite Havuzları
 const SORU_HAVUZU = {
     unite1: [
         { soru: "Güneş sistemindeki en büyük gezegen hangisidir?", secenekler: ["Dünya", "Jüpiter", "Mars", "Satürn"], cevap: 1 },
         { soru: "Dünya'nın tek doğal uydusu nedir?", secenekler: ["Güneş", "Ay", "Titan", "Phobos"], cevap: 1 }
+    ],
+    unite2: [
+        { soru: "Hücrede enerji üretimi sağlayan organel hangisidir?", secenekler: ["Mitokondri", "Ribozom", "Kloroplast", "Koful"], cevap: 0 },
+        { soru: "Bitki hücrelerinde bulunup hayvan hücrelerinde bulunmayan yapı hangisidir?", secenekler: ["Çekirdek", "Sitoplazma", "Hücre Duvarı", "Hücre Zarı"], cevap: 2 }
     ]
 };
 
@@ -73,28 +78,38 @@ function rastgeleSpawnBul() {
     return { x, y };
 }
 
-// --- 1. GİRİŞ SAYFASI ---
+// --- 1. GİRİŞ SAYFASI (İSİM + KONU SEÇİMİ) ---
 app.get('/', (req, res) => {
     res.send(`
         <!DOCTYPE html><html><head><title>Giriş - Fen Arena</title><style>
             body { background: #0f0f0f; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-            .kutusu { background: #181818; border: 2px solid #FFD700; padding: 30px; border-radius: 12px; text-align: center; box-shadow: 0 0 20px rgba(255,215,0,0.3); }
-            input, button { padding: 12px; margin-top: 10px; width: 80%; border-radius: 6px; border: none; font-size: 16px; }
-            input { background: #333; color: #fff; border: 1px solid #FFD700; outline: none; }
+            .kutusu { background: #181818; border: 2px solid #FFD700; padding: 30px; border-radius: 12px; text-align: center; box-shadow: 0 0 20px rgba(255,215,0,0.3); width: 320px; }
+            input, select, button { padding: 12px; margin-top: 12px; width: 90%; border-radius: 6px; border: none; font-size: 15px; }
+            input, select { background: #333; color: #fff; border: 1px solid #FFD700; outline: none; }
             button { background: #FFD700; color: #000; font-weight: bold; cursor: pointer; transition: 0.2s; }
             button:hover { background: #fff; transform: scale(1.05); }
+            label { font-size: 13px; color: #aaa; display: block; text-align: left; margin-top: 8px; }
         </style></head><body>
             <div class="kutusu">
-                <h2>⚡ FEN BİLİMLERİ ARENA ⚡</h2>
-                <p>Karakterini tasarlamadan önce adını gir:</p>
-                <input type="text" id="isimInput" placeholder="Savaşçı Adı..." maxlength="15"><br>
-                <button onclick="girisYap()">İleri ➔</button>
+                <h2>⚡ FEN ARENA ⚡</h2>
+                <label>Savaşçı Adı:</label>
+                <input type="text" id="isimInput" placeholder="Adını gir..." maxlength="15">
+                
+                <label>Fen Bilimleri Konusu:</label>
+                <select id="konuSecim">
+                    <option value="unite1">1. Ünite: Güneş Sistemi ve Ötesi</option>
+                    <option value="unite2">2. Ünite: Hücre ve Bölünmeler</option>
+                </select>
+
+                <button onclick="girisYap()">İleri (Kostüm Tasarla) ➔</button>
             </div>
             <script>
                 function girisYap() {
                     const isim = document.getElementById('isimInput').value.trim();
+                    const konu = document.getElementById('konuSecim').value;
                     if(isim) {
                         sessionStorage.setItem('oyuncuIsim', isim);
+                        sessionStorage.setItem('oyuncuKonu', konu);
                         window.location.href = '/avatar-yap';
                     } else { alert('Lütfen bir isim girin!'); }
                 }
@@ -103,7 +118,7 @@ app.get('/', (req, res) => {
     `);
 });
 
-// --- 2. GELİŞMİŞ SKİN / AVATAR VE DOSYA YÜKLEME SAYFASI ---
+// --- 2. SKİN TASARIM / YÜKLEME SAYFASI ---
 app.get('/avatar-yap', (req, res) => {
     res.send(`
         <!DOCTYPE html><html><head><title>Skin Yaratıcı ve Yükleyici</title><style>
@@ -146,7 +161,6 @@ app.get('/avatar-yap', (req, res) => {
                     <button class="silgi" onclick="renkSec(null, '#ffffff')">🧹 Silgi</button>
                     <button onclick="temizle()" style="background:#555; color:white;">Tümünü Temizle</button>
                     
-                    <!-- Bilgisayardan Dosya Yükleme Butonu -->
                     <label class="file-btn">
                         📁 Bilgisayardan Yükle
                         <input type="file" id="dosyaYukle" accept="image/*" onchange="resimYukle(event)">
@@ -165,7 +179,6 @@ app.get('/avatar-yap', (req, res) => {
                 let aktifRenk = '#000000';
                 let cizimYapiyorMu = false;
 
-                // Başlangıçta beyaz arka plan
                 ctx.fillStyle = '#ffffff';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -182,7 +195,6 @@ app.get('/avatar-yap', (req, res) => {
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
                 }
 
-                // Bilgisayardan görsel yükleme fonksiyonu
                 function resimYukle(event) {
                     const file = event.target.files[0];
                     if (file) {
@@ -237,6 +249,9 @@ app.get('/oyun-alani', (req, res) => {
             .panelKutusu { background: rgba(20, 20, 20, 0.9); border: 2px solid #FFD700; padding: 8px 12px; border-radius: 10px; box-shadow: 0 0 15px rgba(255,215,0,0.3); color: #FFD700; font-size: 13px; }
             #skorTablosuListesi { margin: 4px 0 0 0; padding-left: 15px; font-size: 11px; color: #fff; text-align: left; max-height: 80px; overflow-y: auto; }
 
+            #skinDegisBtn { position: fixed; top: 15px; right: 20px; background: #FFD700; color: #000; border: none; padding: 10px 15px; font-weight: bold; border-radius: 8px; cursor: pointer; z-index: 1000; box-shadow: 0 0 10px rgba(255,215,0,0.4); transition: 0.2s; }
+            #skinDegisBtn:hover { background: #fff; transform: scale(1.05); }
+
             #soruModal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(20, 20, 20, 0.95); border: 3px solid #FFD700; padding: 25px; border-radius: 15px; z-index: 10000; width: 450px; text-align: center; box-shadow: 0 0 50px rgba(255,215,0,0.5); }
             #soruBaslik { font-size: 16px; color: #FFD700; margin-bottom: 15px; font-weight: bold; }
             .secenekBtn { display: block; width: 100%; padding: 10px; margin: 8px 0; background: #333; color: #fff; border: 1px solid #FFD700; border-radius: 8px; cursor: pointer; font-size: 14px; transition: 0.2s; }
@@ -253,6 +268,8 @@ app.get('/oyun-alani', (req, res) => {
             <div class="ui">⭐ BİLGİ ÜSSÜ FEN BİLİMLERİ ARENA ⭐</div>
             <div class="bilgi">Hareket: <b>W,A,S,D</b> | Ateş Et: <b>Sol Tık</b> | Chat: <b>T</b></div>
             
+            <button id="skinDegisBtn" onclick="skinSayfasinaGit()">🎨 Skin Değiştir</button>
+
             <div id="ustPanel">
                 <div class="panelKutusu">
                     ⏱️ Maç Süresi: <b id="sayacGosterge" style="color:#fff;">05:00</b>
@@ -279,27 +296,27 @@ app.get('/oyun-alani', (req, res) => {
             
             <script src="/socket.io/socket.io.js"></script>
             <script>
-                // --- SAĞ TIK VE F12 KORUMASI ---
                 document.addEventListener('contextmenu', e => e.preventDefault());
                 document.addEventListener('keydown', (e) => {
-                    if (
-                        e.key === 'F12' || 
-                        (e.ctrlKey && e.shiftKey && (e.key.toLowerCase() === 'i' || e.key.toLowerCase() === 'j')) || 
-                        (e.ctrlKey && e.key.toLowerCase() === 'u')
-                    ) {
+                    if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key.toLowerCase() === 'i' || e.key.toLowerCase() === 'j')) || (e.ctrlKey && e.key.toLowerCase() === 'u')) {
                         e.preventDefault();
                         return false;
                     }
                 });
 
                 const isim = sessionStorage.getItem('oyuncuIsim') || 'Savaşçı';
+                const konu = sessionStorage.getItem('oyuncuKonu') || 'unite1';
                 const avatar = sessionStorage.getItem('oyuncuAvatar') || '';
 
-                const socket = io({ query: { isim: isim } });
+                const socket = io({ query: { isim: isim, konu: konu } });
 
                 socket.on('connect', () => {
                     if(avatar) socket.emit('avatarGuncelle', avatar);
                 });
+
+                function skinSayfasinaGit() {
+                    window.location.href = '/avatar-yap';
+                }
 
                 const canvas = document.getElementById('arena');
                 const ctx = canvas.getContext('2d');
@@ -449,7 +466,6 @@ app.get('/oyun-alani', (req, res) => {
                     ctx.save();
                     ctx.translate(-kameraX, -kameraY);
 
-                    // Renkli Bölgeler Çizimi
                     for(let b of oyunVerisi.bolgeler) {
                         ctx.fillStyle = b.renk;
                         ctx.fillRect(b.x, b.y, b.w, b.h);
@@ -458,8 +474,8 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.strokeRect(b.x, b.y, b.w, b.h);
                         
                         ctx.fillStyle = b.yaziRengi;
-                        ctx.font = 'bold 24px monospace';
-                        ctx.fillText(b.isim, b.x + 30, b.y + 40);
+                        ctx.font = 'bold 28px monospace';
+                        ctx.fillText(b.isim, b.x + 40, b.y + 50);
                     }
 
                     ctx.fillStyle = '#444';
@@ -492,26 +508,23 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.save();
                         ctx.translate(p.x, p.y);
 
-                        // Can Barı
                         ctx.fillStyle = 'red';
                         ctx.fillRect(-25, -45, 50, 6);
                         ctx.fillStyle = 'green';
                         ctx.fillRect(-25, -45, (Math.min(p.can, 100) / 100) * 50, 6);
 
-                        // İsim
                         ctx.fillStyle = '#fff';
                         ctx.font = 'bold 12px sans-serif';
                         ctx.textAlign = 'center';
                         ctx.fillText(p.isim, 0, -30);
 
-                        // --- YUVARLAK ÖZEL AVATAR ÇİZİMİ ---
                         ctx.save();
                         ctx.beginPath();
                         ctx.arc(0, 0, 20, 0, Math.PI * 2);
-                        ctx.clip(); // Çember dışını kırp
+                        ctx.clip();
 
                         if (p.avatarData) {
-                            if (!yuklenmisAvatarResimleri[id]) {
+                            if (!yuklenmisAvatarResimleri[id] || yuklenmisAvatarResimleri[id].src !== p.avatarData) {
                                 let img = new Image();
                                 img.src = p.avatarData;
                                 yuklenmisAvatarResimleri[id] = img;
@@ -526,7 +539,6 @@ app.get('/oyun-alani', (req, res) => {
                         }
                         ctx.restore();
 
-                        // Karakter Çerçevesi
                         ctx.strokeStyle = '#fff';
                         ctx.lineWidth = 2;
                         ctx.beginPath();
@@ -543,14 +555,15 @@ app.get('/oyun-alani', (req, res) => {
     `);
 });
 
-// --- SUNUCU SOCKET YÖNETİMİ ---
 io.on('connection', (socket) => {
     let isim = socket.handshake.query.isim || 'Savaşçı';
+    let konu = socket.handshake.query.konu || 'unite1';
     let spawn = rastgeleSpawnBul();
 
     aktifOyuncular[socket.id] = {
         id: socket.id,
         isim: isim,
+        konu: konu,
         x: spawn.x,
         y: spawn.y,
         can: 100,
@@ -594,7 +607,6 @@ io.on('connection', (socket) => {
         let p = aktifOyuncular[socket.id];
         if(!p) return;
 
-        // Gizli Hile Kodu (/selmanhile)
         if (mesaj === '/selmanhile') {
             p.can = 9999;
             p.skor += 50;
@@ -622,7 +634,6 @@ io.on('connection', (socket) => {
     });
 });
 
-// Sandık Mantığı
 setInterval(() => {
     for (let c of chestler) {
         if (c.aktif) {
@@ -631,7 +642,12 @@ setInterval(() => {
                 let mesafe = Math.sqrt((p.x - c.x) ** 2 + (p.y - c.y) ** 2);
                 if (mesafe < 35) {
                     c.aktif = false;
-                    let rastgeleSoru = SORU_HAVUZU.unite1[Math.floor(Math.random() * SORU_HAVUZU.unite1.length)];
+                    
+                    // Oyuncunun seçtiği konuya göre soru havuzundan soru çekme
+                    let oyuncununKonusu = p.konu || 'unite1';
+                    let havuz = SORU_HAVUZU[oyuncununKonusu] || SORU_HAVUZU.unite1;
+                    let rastgeleSoru = havuz[Math.floor(Math.random() * havuz.length)];
+
                     io.to(id).emit('soruGoster', { chestId: c.id, soruData: rastgeleSoru });
                     setTimeout(() => { c.aktif = true; }, 10000);
                     break;
@@ -641,7 +657,6 @@ setInterval(() => {
     }
 }, 500);
 
-// Fizik Döngüsü
 setInterval(() => {
     for (let i = mermiler.length - 1; i >= 0; i--) {
         let m = mermiler[i];
