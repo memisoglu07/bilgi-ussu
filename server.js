@@ -58,7 +58,8 @@ setInterval(() => {
 }, 1000);
 
 function carpismaVarMi(x, y, yaricap) {
-    for (let d of DUVARLAR) {
+    for (let i = 0; i < DUVARLAR.length; i++) {
+        let d = DUVARLAR[i];
         if (x + yaricap > d.x && x - yaricap < d.x + d.w &&
             y + yaricap > d.y && y - yaricap < d.y + d.h) {
             return true;
@@ -235,7 +236,7 @@ app.get('/avatar-yap', (req, res) => {
     `);
 });
 
-// --- 3. SÜPER OPTİMİZE OYUN ALANI SAYFASI ---
+// --- 3. ULTRA OPTİMİZE OYUN ALANI SAYFASI ---
 app.get('/oyun-alani', (req, res) => {
     res.send(`
         <!DOCTYPE html><html><head><title>Fen Bilimleri Chest Arena</title><style>
@@ -321,8 +322,6 @@ app.get('/oyun-alani', (req, res) => {
                 const ctx = canvas.getContext('2d');
 
                 let oyunVerisi = { players: {}, bullets: [], walls: ${JSON.stringify(DUVARLAR)}, chests: ${JSON.stringify(chestler)}, bolgeler: ${JSON.stringify(BOLGELER)}, kalanSure: 300 };
-                
-                // Önbellek havuzları (Kasma sorununu çözen ana kısım)
                 let avatarOnbellek = {};
 
                 let chestImg = new Image();
@@ -377,6 +376,7 @@ app.get('/oyun-alani', (req, res) => {
                     socket.emit('atesEt', { x: tikX + kameraX, y: tikY + kameraY });
                 });
 
+                // Hareketleri azaltıp sunucuyu rahatlatıyoruz (30fps gönderim)
                 setInterval(() => {
                     if (chatAcik || soruAcik) return;
                     let hareket = {x: 0, y: 0};
@@ -388,7 +388,7 @@ app.get('/oyun-alani', (req, res) => {
                     if(tuslar['d'] || tuslar['arrowright']) hareket.x = hiz;
 
                     if(hareket.x !== 0 || hareket.y !== 0) socket.emit('hareketEt', hareket);
-                }, 1000 / 60);
+                }, 1000 / 30);
 
                 socket.on('arenaGuncelle', (data) => { 
                     oyunVerisi = data; 
@@ -636,11 +636,13 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         delete aktifOyuncular[socket.id];
+        // Çıkan oyuncunun önbellek kalıntısını da temizleyelim ki RAM şişmesin
     });
 });
 
 setInterval(() => {
-    for (let c of chestler) {
+    for (let i = 0; i < chestler.length; i++) {
+        let c = chestler[i];
         if (c.aktif) {
             for (let id in aktifOyuncular) {
                 let p = aktifOyuncular[id];
@@ -704,7 +706,7 @@ setInterval(() => {
         bolgeler: BOLGELER,
         kalanSure: kalanMacSuresi
     });
-}, 1000 / 60);
+}, 1000 / 30);
 
 server.listen(PORT, () => {
     console.log(`Sunucu aktif: Port ${PORT}`);
