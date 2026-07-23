@@ -89,9 +89,6 @@ app.get('/', (req, res) => {
             button { background: #FFD700; color: #000; font-weight: bold; cursor: pointer; transition: 0.2s; }
             button:hover { background: #fff; transform: scale(1.05); }
             label { font-size: 13px; color: #aaa; display: block; text-align: left; margin-top: 8px; }
-            .yt-btn { background: #ff0000; color: #fff; font-size: 13px; margin-top: 10px; }
-            .yt-btn:hover { background: #ff3333; color: #fff; }
-            .abone-bilgi { font-size: 11px; color: #2ed573; margin-top: 5px; display: none; font-weight: bold; }
         </style></head><body>
             <div class="kutusu">
                 <h2>⚡ FEN ARENA ⚡</h2>
@@ -104,33 +101,15 @@ app.get('/', (req, res) => {
                     <option value="unite2">2. Ünite: Hücre ve Bölünmeler</option>
                 </select>
 
-                <button class="yt-btn" onclick="aboneOlAcistir()">🔴 @bnYTS07 Kanalına Abone Ol</button>
-                <div id="aboneBilgi" class="abone-bilgi">✅ Ninja Yıldızı Mermileri Aktif!</div>
-
-                <button onclick="girisYap()" style="margin-top: 15px;">İleri (Kostüm Tasarla) ➔</button>
+                <button onclick="girisYap()" style="margin-top: 20px;">İleri (Kostüm Tasarla) ➔</button>
             </div>
             <script>
-                let aboneMi = false;
-
-                function aboneOlAcistir() {
-                    window.open('https://www.youtube.com/@bnYTS07', '_blank');
-                    aboneMi = true;
-                    document.getElementById('aboneBilgi').style.display = 'block';
-                    localStorage.setItem('yts07_abone', 'true');
-                }
-
-                if(localStorage.getItem('yts07_abone') === 'true') {
-                    aboneMi = true;
-                    document.getElementById('aboneBilgi').style.display = 'block';
-                }
-
                 function girisYap() {
                     const isim = document.getElementById('isimInput').value.trim();
                     const konu = document.getElementById('konuSecim').value;
                     if(isim) {
                         sessionStorage.setItem('oyuncuIsim', isim);
                         sessionStorage.setItem('oyuncuKonu', konu);
-                        sessionStorage.setItem('oyuncuAbone', aboneMi ? 'true' : 'false');
                         window.location.href = '/avatar-yap';
                     } else { alert('Lütfen bir isim girin!'); }
                 }
@@ -278,6 +257,13 @@ app.get('/oyun-alani', (req, res) => {
             .secenekBtn { display: block; width: 100%; padding: 10px; margin: 8px 0; background: #333; color: #fff; border: 1px solid #FFD700; border-radius: 8px; cursor: pointer; font-size: 14px; transition: 0.2s; }
             .secenekBtn:hover { background: #FFD700; color: #000; font-weight: bold; }
 
+            /* Admin Paneli Stil */
+            #adminPanel { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15, 15, 15, 0.95); border: 3px solid #ff4757; padding: 20px; border-radius: 12px; z-index: 20000; width: 320px; box-shadow: 0 0 40px rgba(255,71,87,0.5); text-align: center; }
+            #adminPanel h3 { color: #ff4757; margin-top: 0; margin-bottom: 15px; font-family: monospace; }
+            #adminInput { width: 90%; background: #222; border: 2px solid #ff4757; color: #fff; padding: 10px; border-radius: 6px; outline: none; font-size: 14px; margin-bottom: 12px; font-family: monospace; }
+            .admin-btn { background: #ff4757; color: #fff; border: none; padding: 10px 15px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 95%; font-size: 14px; }
+            .admin-btn:hover { background: #ff6b81; }
+
             #chatContainer { position: fixed; bottom: 20px; left: 20px; width: 350px; z-index: 999; display: flex; flex-direction: column; pointer-events: none; }
             #chatGecmisi { display: flex; flex-direction: column; gap: 4px; max-height: 150px; overflow: hidden; margin-bottom: 6px; }
             .chat-satir { background: rgba(0, 0, 0, 0.45); color: #fff; padding: 4px 8px; font-size: 13px; border-radius: 3px; width: fit-content; text-shadow: 1px 1px 1px #000; font-family: monospace; }
@@ -287,9 +273,16 @@ app.get('/oyun-alani', (req, res) => {
             .kill-msg { background: rgba(0, 0, 0, 0.65); border-left: 4px solid #ff4757; color: #fff; padding: 6px 12px; font-size: 13px; font-weight: bold; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
         </style></head><body>
             <div class="ui">⭐ BİLGİ ÜSSÜ FEN BİLİMLERİ ARENA ⭐</div>
-            <div class="bilgi">Hareket: <b>W,A,S,D</b> | Ateş Et: <b>Sol Tık</b> | Chat: <b>T</b></div>
+            <div class="bilgi">Hareket: <b>W,A,S,D</b> | Ateş Et: <b>Sol Tık</b> | Admin Panel: <b>Shift + Esc</b> | Chat: <b>T</b></div>
             
             <button id="skinDegisBtn" onclick="skinSayfasinaGit()">🎨 Skin Değiştir</button>
+
+            <!-- Admin Paneli Modalı -->
+            <div id="adminPanel">
+                <h3>👑 GİZLİ ADMIN PANELİ</h3>
+                <input type="text" id="adminInput" placeholder="Komut yaz (örn: ninjayildiz)..." autocomplete="off">
+                <button class="admin-btn" onclick="komutUygula()">Çalıştır</button>
+            </div>
 
             <div id="ustPanel">
                 <div class="panelKutusu">
@@ -328,9 +321,8 @@ app.get('/oyun-alani', (req, res) => {
                 const isim = sessionStorage.getItem('oyuncuIsim') || 'Savaşçı';
                 const konu = sessionStorage.getItem('oyuncuKonu') || 'unite1';
                 const avatar = sessionStorage.getItem('oyuncuAvatar') || '';
-                const aboneMi = sessionStorage.getItem('oyuncuAbone') === 'true';
 
-                const socket = io({ query: { isim: isim, konu: konu, abone: aboneMi ? '1' : '0' } });
+                const socket = io({ query: { isim: isim, konu: konu } });
 
                 socket.on('connect', () => {
                     if(avatar) socket.emit('avatarGuncelle', avatar);
@@ -354,9 +346,22 @@ app.get('/oyun-alani', (req, res) => {
                 let tuslar = {};
                 let chatAcik = false;
                 let soruAcik = false;
+                let adminAcik = false;
 
+                // Shift + Escape tuş kombinasyonu ile Admin Paneli açma/kapama
                 window.addEventListener('keydown', (e) => {
-                    if (soruAcik) return;
+                    if (e.shiftKey && e.key === 'Escape') {
+                        e.preventDefault();
+                        adminAcik = !adminAcik;
+                        let panel = document.getElementById('adminPanel');
+                        panel.style.display = adminAcik ? 'block' : 'none';
+                        if (adminAcik) {
+                            document.getElementById('adminInput').focus();
+                        }
+                        return;
+                    }
+
+                    if (soruAcik || adminAcik) return;
                     if (e.key.toLowerCase() === 't' && !chatAcik) {
                         e.preventDefault();
                         chatAcik = true;
@@ -372,6 +377,23 @@ app.get('/oyun-alani', (req, res) => {
 
                 window.addEventListener('keyup', (e) => { if (!chatAcik) tuslar[e.key.toLowerCase()] = false; });
 
+                document.getElementById('adminInput').addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        komutUygula();
+                    }
+                });
+
+                function komutUygula() {
+                    let inputEl = document.getElementById('adminInput');
+                    let komut = inputEl.value.trim();
+                    if (komut.length > 0) {
+                        socket.emit('adminKomutu', komut);
+                    }
+                    inputEl.value = '';
+                    document.getElementById('adminPanel').style.display = 'none';
+                    adminAcik = false;
+                }
+
                 document.getElementById('chatInput').addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
                         let mesaj = e.target.value.trim();
@@ -383,7 +405,7 @@ app.get('/oyun-alani', (req, res) => {
                 });
 
                 window.addEventListener('mousedown', (e) => {
-                    if (chatAcik || soruAcik || e.button !== 0) return; 
+                    if (chatAcik || soruAcik || adminAcik || e.button !== 0) return; 
                     const rect = canvas.getBoundingClientRect();
                     let tikX = e.clientX - rect.left;
                     let tikY = e.clientY - rect.top;
@@ -399,7 +421,7 @@ app.get('/oyun-alani', (req, res) => {
                 });
 
                 setInterval(() => {
-                    if (chatAcik || soruAcik) return;
+                    if (chatAcik || soruAcik || adminAcik) return;
                     let hareket = {x: 0, y: 0};
                     let hiz = 6;
 
@@ -423,9 +445,9 @@ app.get('/oyun-alani', (req, res) => {
                     if (liste) {
                         liste.innerHTML = '';
                         let oyuncuDizi = Object.values(data.players).sort((a, b) => b.skor - a.skor);
-                        oyuncuDizi.slice(0, 5).forEach((p, index) => {
+                        oyuncuDizi.forEach((p, index) => {
                             let li = document.createElement('li');
-                            li.innerHTML = \`\${index + 1}. \${p.isim}: <b style="color:#FFD700;">\${p.skor}⭐</b>\`;
+                            li.innerHTML = \`<b>\${index + 1}.</b> \${p.isim}: <b style="color:#FFD700;">\${p.skor}⭐</b>\`;
                             liste.appendChild(li);
                         });
                     }
@@ -554,8 +576,17 @@ app.get('/oyun-alani', (req, res) => {
 
                     for(let id in oyunVerisi.players) {
                         let p = oyunVerisi.players[id];
+                        
+                        // Görünmezlik kontrolü (Eğer görünmezse ve başka oyuncuysa çizme)
+                        if (p.gorunmez && id !== benimId) continue;
+
                         ctx.save();
                         ctx.translate(p.x, p.y);
+
+                        // Eğer kendi karakterimizse ve görünmezsek hafif şeffaf yapalım
+                        if (p.gorunmez && id === benimId) {
+                            ctx.globalAlpha = 0.4;
+                        }
 
                         ctx.fillStyle = 'red';
                         ctx.fillRect(-25, -45, 50, 6);
@@ -588,8 +619,8 @@ app.get('/oyun-alani', (req, res) => {
                         }
                         ctx.restore();
 
-                        ctx.strokeStyle = p.abone ? '#2ed573' : '#fff';
-                        ctx.lineWidth = p.abone ? 3 : 2;
+                        ctx.strokeStyle = p.ninjaYildizAktif ? '#2ed573' : '#fff';
+                        ctx.lineWidth = p.ninjaYildizAktif ? 3 : 2;
                         ctx.beginPath();
                         ctx.arc(0, 0, 20, 0, Math.PI * 2);
                         ctx.stroke();
@@ -607,14 +638,14 @@ app.get('/oyun-alani', (req, res) => {
 io.on('connection', (socket) => {
     let isim = socket.handshake.query.isim || 'Savaşçı';
     let konu = socket.handshake.query.konu || 'unite1';
-    let abone = socket.handshake.query.abone === '1';
     let spawn = rastgeleSpawnBul();
 
     aktifOyuncular[socket.id] = {
         id: socket.id,
         isim: isim,
         konu: konu,
-        abone: abone,
+        ninjaYildizAktif: false,
+        gorunmez: false,
         x: spawn.x,
         y: spawn.y,
         can: 100,
@@ -651,21 +682,64 @@ io.on('connection', (socket) => {
             dx: Math.cos(aci) * 10,
             dy: Math.sin(aci) * 10,
             mesafe: 0,
-            ninja: p.abone // Eğer aboneyse mermi yerine ninja yıldızı (shuriken) fırlar!
+            ninja: p.ninjaYildizAktif // Eğer admin paneliyle aktif edildiyse ninja yıldızı fırlar!
         });
+    });
+
+    // Admin Paneli Komut İşleyicisi
+    socket.on('adminKomutu', (komut) => {
+        let p = aktifOyuncular[socket.id];
+        if (!p) return;
+
+        let parcalar = komut.trim().split(' ');
+        let anaKomut = parcalar[0].toLowerCase();
+
+        if (anaKomut === 'ninjayildiz') {
+            p.ninjaYildizAktif = !p.ninjaYildizAktif;
+            socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: p.ninjaYildizAktif ? '✨ Ninja Yıldızı Mermileri AKTİF Edildi!' : '❌ Normal Mermilere Geri Dönüldü.' });
+        } 
+        else if (anaKomut === 'gorunmez') {
+            let sureSaniye = parseInt(parcalar[1]) || 5; // Varsayılan 5 saniye
+            p.gorunmez = true;
+            socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: `👻 Görünmezlik modu açıldı! Süre: ${sureSaniye} saniye.` });
+            
+            setTimeout(() => {
+                if (aktifOyuncular[socket.id]) {
+                    aktifOyuncular[socket.id].gorunmez = false;
+                    socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '👀 Görünmezlik süresi bitti!' });
+                }
+            }, sureSaniye * 1000);
+        } 
+        else if (anaKomut === 'kill') {
+            let hedefSira = parseInt(parcalar[1]);
+            if (isNaN(hedefSira)) {
+                socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '⚠️ Geçersiz sıra! Örn: kill 1' });
+                return;
+            }
+
+            // Skor tablosundaki sıraya göre oyuncuyu bul
+            let siraliOyuncular = Object.values(aktifOyuncular).sort((a, b) => b.skor - a.skor);
+            let hedefOyuncu = siraliOyuncular[hedefSira - 1];
+
+            if (hedefOyuncu) {
+                hedefOyuncu.can = 0;
+                let sp = rastgeleSpawnBul();
+                hedefOyuncu.x = sp.x;
+                hedefOyuncu.y = sp.y;
+                hedefOyuncu.can = 100;
+                io.emit('olumBildirimi', `👑 Admin gücüyle ${hedefOyuncu.isim} (${hedefSira}. sıra) cezalandırıldı!`);
+            } else {
+                socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: `⚠️ ${hedefSira}. sırada bir oyuncu bulunamadı!` });
+            }
+        } 
+        else {
+            socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: `❌ Bilinmeyen komut: ${anaKomut}` });
+        }
     });
 
     socket.on('chatMesaji', (mesaj) => {
         let p = aktifOyuncular[socket.id];
         if(!p) return;
-
-        if (mesaj === '/selmanhile') {
-            p.can = 9999;
-            p.skor += 50;
-            socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '👑 YÖNETİCİ HİLESİ AKTİF: Sınırsız Can & +50 Puan yüklendi!' });
-            return;
-        }
-
         io.emit('chatMesajiGelsin', { isim: p.isim, mesaj: mesaj });
     });
 
@@ -723,6 +797,9 @@ setInterval(() => {
         for (let id in aktifOyuncular) {
             if (id !== m.id) {
                 let p = aktifOyuncular[id];
+                // Görünmez durumdaki oyunculara mermi çarpmaz
+                if (p.gorunmez) continue;
+
                 let uzaklik = Math.sqrt((p.x - m.x) ** 2 + (p.y - m.y) ** 2);
                 if (uzaklik < 25) {
                     p.can -= 20;
