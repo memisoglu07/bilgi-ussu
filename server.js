@@ -16,7 +16,6 @@ app.use(bodyParser.json({ limit: '10mb' }));
 
 app.use('/karakterler', express.static(path.join(__dirname, '../oyun_projem/karakterler')));
 
-// Veritabanı Bağlantısı (Render çökmelerini önleyen güvenli mod)
 const db = mysql.createConnection({ 
     host: process.env.DB_HOST || '127.0.0.1', 
     port: process.env.DB_PORT || 8889, 
@@ -27,7 +26,7 @@ const db = mysql.createConnection({
 
 db.connect((err) => {
     if (err) {
-        console.log("⚠️ Veritabanı bağlantısı kurulamadı (Lokal harici ortam), ancak sunucu çalışmaya devam ediyor.");
+        console.log("⚠️ Veritabanı bağlantısı kurulamadı, ancak sunucu çalışmaya devam ediyor.");
     } else {
         console.log("✅ Veritabanına başarıyla bağlanıldı!");
     }
@@ -148,19 +147,6 @@ app.get('/karakter-sec', (req, res) => {
         </body></html>
     `);
 });
-
-const FEN_SORULARI = [
-    { soru: "Güneş'e en yakın olan gezegen hangisidir?", secenekler: ["Merkür", "Venüs", "Dünya", "Mars"], cevap: 0 },
-    { soru: "Halkasıyla bilinen en büyük gaz devi gezegen hangisidir?", secenekler: ["Jüpiter", "Satürn", "Uranüs", "Neptün"], cevap: 1 },
-    { soru: "Güneş sisteminin en sıcak gezegeni hangisidir?", secenekler: ["Merkür", "Venüs", "Mars", "Jüpiter"], cevap: 1 },
-    { soru: "Üzerinde sıvı su bulunduran ve yaşam olan tek gezegen hangisidir?", secenekler: ["Mars", "Venüs", "Dünya", "Neptün"], cevap: 2 },
-    { soru: "Kızıl Gezegen olarak bilinen gezegen hangisidir?", secenekler: ["Jüpiter", "Mars", "Satürn", "Merkür"], cevap: 1 },
-    { soru: "Güneş sisteminin en büyük gezegeni hangisidir?", secenekler: ["Satürn", "Jüpiter", "Uranüs", "Neptün"], cevap: 1 },
-    { soru: "Güneş'e en uzak olan gezegen hangisidir?", secenekler: ["Uranüs", "Neptün", "Satürn", "Jüpiter"], cevap: 1 },
-    { soru: "Güneş tutulmasında hangi gök cismi ortadadır?", secenekler: ["Dünya", "Güneş", "Ay", "Mars"], cevap: 2 },
-    { soru: "Ay tutulmasında hangi gök cismi ortadadır?", secenekler: ["Ay", "Dünya", "Güneş", "Venüs"], cevap: 1 },
-    { soru: "Güneş tutulması olayı ayın hangi evresinde gerçekleşir?", secenekler: ["Yeni Ay", "Dolunay", "İlk Dördün", "Son Dördün"], cevap: 0 }
-];
 
 const HARITA_GENISLIK = 2000;
 const HARITA_YUKSEKLIK = 1500;
@@ -304,7 +290,7 @@ app.get('/oyun-alani', (req, res) => {
 
             <div id="adminKonsol">
                 <h3>⚡ YÖNETİCİ GİZLİ KOMUT KONSOLU</h3>
-                <p>Komutlar: <b>god [saniye]</b> | <b>speed [hız]</b> | <b>invisibility [saniye]</b></p>
+                <p>Komutlar: <b>god [saniye]</b> | <b>speed [hız]</b></p>
                 <input type="text" id="adminInput" placeholder="Komut yaz ve Enter'a bas" autocomplete="off">
             </div>
 
@@ -324,23 +310,13 @@ app.get('/oyun-alani', (req, res) => {
             
             <script src="/socket.io/socket.io.js"></script>
             <script>
-                // 1. GÜVENLİK: Sağ Tık ve Geliştirici Araçlarını Engelle
-                document.addEventListener('contextmenu', function(e) {
-                    e.preventDefault();
-                });
+                document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
 
                 document.addEventListener('keydown', function(e) {
-                    if (e.key === 'F12') {
-                        e.preventDefault();
-                    }
-                    if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) {
-                        e.preventDefault();
-                    }
-                    if (e.ctrlKey && e.key === 'U') {
-                        e.preventDefault(); 
-                    }
+                    if (e.key === 'F12') e.preventDefault();
+                    if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) e.preventDefault();
+                    if (e.ctrlKey && e.key === 'U') e.preventDefault(); 
 
-                    // 2. GİZLİ PANEL: Ctrl + Shift + Esc ile Şifre Ekranını Aç
                     if (e.ctrlKey && e.shiftKey && e.code === 'Escape') {
                         e.preventDefault();
                         adminKonsolAcik = false;
@@ -584,13 +560,12 @@ app.get('/oyun-alani', (req, res) => {
                     let kameraX = 0, kameraY = 0;
                     if (ben) {
                         kameraX = Math.max(0, Math.min(ben.x - canvas.width / 2, ${HARITA_GENISLIK} - canvas.width));
-                        kameraY = Math.max(0, Math.min(ben.y - canvas.height / 2, 1500 - canvas.height));
+                        kameraY = Math.max(0, Math.min(ben.y - canvas.height / 2, ${HARITA_YUKSEKLIK} - canvas.height));
                     }
 
                     ctx.save();
                     ctx.translate(-kameraX, -kameraY);
 
-                    // Bölge Renkleri
                     for(let b of oyunVerisi.bolgeler) {
                         ctx.fillStyle = b.renk;
                         ctx.fillRect(b.x, b.y, b.w, b.h);
@@ -603,7 +578,6 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.fillText(b.isim, b.x + 30, b.y + 40);
                     }
 
-                    // Duvarlar
                     ctx.fillStyle = '#444';
                     for(let d of oyunVerisi.walls) {
                         ctx.fillRect(d.x, d.y, d.w, d.h);
@@ -611,14 +585,12 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.strokeRect(d.x, d.y, d.w, d.h);
                     }
 
-                    // Sandıklar (Chests)
                     for(let c of oyunVerisi.chests) {
                         if(c.aktif) {
                             ctx.drawImage(chestImg, c.x - 20, c.y - 20, 40, 40);
                         }
                     }
 
-                    // Mermiler
                     for(let m of oyunVerisi.bullets) {
                         ctx.fillStyle = '#ff4757';
                         ctx.beginPath();
@@ -626,25 +598,21 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.fill();
                     }
 
-                    // Oyuncular
                     for(let id in oyunVerisi.players) {
                         let p = oyunVerisi.players[id];
                         ctx.save();
                         ctx.translate(p.x, p.y);
 
-                        // Can Barı
                         ctx.fillStyle = 'red';
                         ctx.fillRect(-25, -45, 50, 6);
                         ctx.fillStyle = 'green';
                         ctx.fillRect(-25, -45, (p.can / 100) * 50, 6);
 
-                        // Oyuncu İsmi
                         ctx.fillStyle = '#fff';
                         ctx.font = 'bold 12px sans-serif';
                         ctx.textAlign = 'center';
                         ctx.fillText(p.isim, 0, -30);
 
-                        // Karakter Çizimi / Avatar
                         if (p.avatarData) {
                             let img = loadedImages[id];
                             if (!img) {
@@ -683,7 +651,6 @@ app.get('/oyun-alani', (req, res) => {
     `);
 });
 
-// Oyuncu ve Socket Bağlantı Yönetimi (Sunucu Tarafı)
 io.on('connection', (socket) => {
     let isim = socket.handshake.query.isim || 'Savaşçı';
     let spawn = rastgeleSpawnBul();
@@ -697,8 +664,7 @@ io.on('connection', (socket) => {
         skor: 0,
         avatarData: '',
         ozelHiz: 6,
-        tanriModu: false,
-        gorunmez: false
+        tanriModu: false
     };
 
     socket.on('avatarGuncelle', (avatar) => {
@@ -707,7 +673,8 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('hareketEst', (h) => {
+    // DÜZELTME BURADA: 'hareketEst' yerine doğru olan 'hareketEt' yapıldı
+    socket.on('hareketEt', (h) => {
         let p = aktifOyuncular[socket.id];
         if(!p) return;
         let yeniX = p.x + h.x;
@@ -760,9 +727,7 @@ io.on('connection', (socket) => {
     });
 });
 
-// Oyun Döngüsü (Sunucu Tarafı Güncellemeleri)
 setInterval(() => {
-    // Mermilerin hareketi ve çarpışma kontrolü
     for (let i = mermiler.length - 1; i >= 0; i--) {
         let m = mermiler[i];
         m.x += m.dx;
@@ -774,7 +739,6 @@ setInterval(() => {
             continue;
         }
 
-        // Oyuncu vuruş kontrolü
         for (let id in aktifOyuncular) {
             if (id !== m.id) {
                 let p = aktifOyuncular[id];
