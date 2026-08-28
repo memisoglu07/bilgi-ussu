@@ -11,34 +11,33 @@ const io = new Server(server, {
     cors: { origin: "*", methods: ["GET", "POST"] }
 });
 
-// Bulut sunucuların dinamik portu (Koyeb / Render / Railway Uyumlu)
 const PORT = process.env.PORT || 3000;
 
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 app.use(bodyParser.json({ limit: '10mb' }));
 
-// Klasördeki statik dosyaları dışarı açma
 app.use(express.static(__dirname));
 app.use('/ses', express.static(path.join(__dirname, 'ses')));
 app.use('/muzik', express.static(path.join(__dirname, 'ses/muzik')));
 app.use('/karakterler', express.static(path.join(__dirname, 'karakterler')));
 
-// Veritabanı Bağlantısı (Bulut Uyumlu + Hata Yakalamalı)
-const db = mysql.createConnection({ 
-    host: process.env.DB_HOST || '127.0.0.1', 
-    port: process.env.DB_PORT || 8889, 
-    user: process.env.DB_USER || 'root', 
-    password: process.env.DB_PASSWORD || 'root', 
-    database: process.env.DB_NAME || 'bilgi_ussu_proje' 
-});
-
-db.connect((err) => {
-    if (err) {
-        console.log("⚠️ Veritabanı bağlantısı sağlanamadı, bellek içi modda devam ediliyor.");
-    } else {
-        console.log("✅ Veritabanı bağlantısı başarılı.");
-    }
-});
+// VERCEL ÇÖKMESİNİ ENGELLEYEN VERİTABANI BAĞLANTISI
+let db;
+if (process.env.DB_HOST) {
+    db = mysql.createConnection({ 
+        host: process.env.DB_HOST, 
+        port: process.env.DB_PORT || 3306, 
+        user: process.env.DB_USER, 
+        password: process.env.DB_PASSWORD, 
+        database: process.env.DB_NAME 
+    });
+    db.connect((err) => {
+        if (err) console.log("⚠️ Veritabanı bağlantı hatası, bellek modunda devam ediliyor.");
+        else console.log("✅ Veritabanı bağlantısı başarılı.");
+    });
+} else {
+    console.log("ℹ️ Vercel / Bellek İçi Mod Aktif.");
+}
 
 const layout = (content, title = "BİLGİ ÜSSÜ - BRAWL ARENA") => `
     <!DOCTYPE html><html><head><title>${title}</title><style>
@@ -578,7 +577,6 @@ app.get('/oyun-alani', (req, res) => {
                     ctx.save();
                     ctx.translate(-kameraX, -kameraY);
 
-                    // Bölge Çizimleri
                     if (oyunVerisi.bolgeler) {
                         oyunVerisi.bolgeler.forEach(b => {
                             ctx.fillStyle = b.renk;
@@ -589,7 +587,6 @@ app.get('/oyun-alani', (req, res) => {
                         });
                     }
 
-                    // Duvarlar
                     if (oyunVerisi.walls) {
                         ctx.fillStyle = "#333";
                         ctx.strokeStyle = "#FFD700";
@@ -600,7 +597,6 @@ app.get('/oyun-alani', (req, res) => {
                         });
                     }
 
-                    // Sandıklar (Chestler)
                     if (oyunVerisi.chests) {
                         oyunVerisi.chests.forEach(c => {
                             if (c.aktif) {
@@ -614,7 +610,6 @@ app.get('/oyun-alani', (req, res) => {
                         });
                     }
 
-                    // Mermiler
                     if (oyunVerisi.bullets) {
                         oyunVerisi.bullets.forEach(b => {
                             ctx.fillStyle = "#ff4757";
@@ -624,10 +619,9 @@ app.get('/oyun-alani', (req, res) => {
                         });
                     }
 
-                    // Oyuncular
                     for (let id in oyunVerisi.players) {
                         let p = oyunVerisi.players[id];
-                        if (p.gorunmez) continue; // Gizlilik hilesi aktifse çizme
+                        if (p.gorunmez) continue;
 
                         if (p.avatarData) {
                             if (!loadedImages[id]) {
@@ -647,7 +641,6 @@ app.get('/oyun-alani', (req, res) => {
                             ctx.fill();
                         }
 
-                        // Can Barı & İsim
                         ctx.fillStyle = "#ff4757";
                         ctx.fillRect(p.x - 25, p.y - 35, 50, 6);
                         ctx.fillStyle = "#2ed573";
@@ -666,7 +659,6 @@ app.get('/oyun-alani', (req, res) => {
     `);
 });
 
-// Socket.io Oyun Mantığı & Sunucu Olayları
 io.on('connection', (socket) => {
     let oyuncuIsim = socket.handshake.query.isim || 'Savaşçı';
     let spawn = rastgeleSpawnBul();
@@ -701,7 +693,6 @@ io.on('connection', (socket) => {
         if (!carpismaVarMi(yeniX, p.y, 25)) p.x = yeniX;
         if (!carpismaVarMi(p.x, yeniY, 25)) p.y = yeniY;
 
-        // Sandık (Chest) Temas Kontrolü
         chestler.forEach(c => {
             if (c.aktif) {
                 let dist = Math.hypot(p.x - c.x, p.y - c.y);
@@ -710,14 +701,12 @@ io.on('connection', (socket) => {
                     let rastgeleSoru = FEN_SORULARI[Math.floor(Math.random() * FEN_SORULARI.length)];
                     socket.emit('soruGoster', { chestId: c.id, soruData: rastgeleSoru });
 
-                    // 15 Saniye sonra sandığı tekrar aktif et
                     setTimeout(() => { c.aktif = true; }, 15000);
                 }
             }
         });
     });
 
-    // YENİ KURAL: Sandık sorusunu bilince puan 2 ile çarpılır (0 puansa 2 olur) ve can fullenir
     socket.on('cevapVer', (data) => {
         let p = aktifOyuncular[socket.id];
         if (!p) return;
@@ -785,20 +774,17 @@ io.on('connection', (socket) => {
     });
 });
 
-// Oyun Döngüsü (Mermi Hareketi ve Çarpışmalar)
 setInterval(() => {
     for (let i = mermiler.length - 1; i >= 0; i--) {
         let m = mermiler[i];
         m.x += m.vx;
         m.y += m.vy;
 
-        // Duvar Çarpışması
         if (carpismaVarMi(m.x, m.y, 6)) {
             mermiler.splice(i, 1);
             continue;
         }
 
-        // Oyuncu Çarpışması
         for (let id in aktifOyuncular) {
             if (id !== m.id) {
                 let target = aktifOyuncular[id];
@@ -809,8 +795,6 @@ setInterval(() => {
                         target.can -= 20;
                         if (target.can <= 0) {
                             let katil = aktifOyuncular[m.id];
-                            
-                            // YENİ KURAL: Adam öldürünce tam +1 puan verilir
                             if (katil) katil.skor += 1;
 
                             io.emit('olumBildirimi', `☠️ ${katil ? katil.isim : 'Biri'}, ${target.isim} kişisini avladı!`);
@@ -838,4 +822,9 @@ setInterval(() => {
     });
 }, 1000 / 60);
 
-server.listen(PORT, () => console.log(`🚀 Sunucu ${PORT} portunda başarıyla çalışıyor.`));
+// Vercel Serverless Desteği
+if (process.env.NODE_ENV !== 'production') {
+    server.listen(PORT, () => console.log(`🚀 Sunucu ${PORT} portunda başarıyla çalışıyor.`));
+}
+
+module.exports = app;
