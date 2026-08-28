@@ -11,9 +11,14 @@ const io = new Server(server, {
 
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 app.use(express.static(__dirname));
+
+// Tüm Klasör Yolları
+app.use('/ses', express.static(path.join(__dirname, 'ses')));
+app.use('/muzik', express.static(path.join(__dirname, 'ses/muzik')));
+app.use('/karakterler', express.static(path.join(__dirname, 'karakterler')));
 
 const FEN_SORULARI = [
     { soru: "Güneş'e en yakın olan gezegen hangisidir?", secenekler: ["Merkür", "Venüs", "Dünya", "Mars"], cevap: 0 },
@@ -32,10 +37,10 @@ const HARITA_GENISLIK = 2000;
 const HARITA_YUKSEKLIK = 1500;
 
 const BOLGELER = [
-    { isim: "TURUNCU BÖLGE", x: 0, y: 0, w: 1000, h: 750, renk: "rgba(255, 140, 0, 0.08)" },
-    { isim: "SİYAH BÖLGE", x: 1000, y: 0, w: 1000, h: 750, renk: "rgba(30, 30, 30, 0.15)" },
-    { isim: "MAVİ BÖLGE", x: 0, y: 750, w: 1000, h: 750, renk: "rgba(0, 150, 255, 0.08)" },
-    { isim: "YEŞİL BÖLGE", x: 1000, y: 750, w: 1000, h: 750, renk: "rgba(0, 255, 100, 0.08)" }
+    { isim: "TURUNCU BÖLGE", x: 0, y: 0, w: 1000, h: 750, renk: "rgba(255, 140, 0, 0.08)", yaziRengi: "#ff8c00" },
+    { isim: "SİYAH BÖLGE", x: 1000, y: 0, w: 1000, h: 750, renk: "rgba(30, 30, 30, 0.15)", yaziRengi: "#aaaaaa" },
+    { isim: "MAVİ BÖLGE", x: 0, y: 750, w: 1000, h: 750, renk: "rgba(0, 150, 255, 0.08)", yaziRengi: "#0096ff" },
+    { isim: "YEŞİL BÖLGE", x: 1000, y: 750, w: 1000, h: 750, renk: "rgba(0, 255, 100, 0.08)", yaziRengi: "#00ff64" }
 ];
 
 const DUVARLAR = [
@@ -46,7 +51,9 @@ const DUVARLAR = [
     { x: 300, y: 300, w: 150, h: 150 },
     { x: 1550, y: 300, w: 150, h: 150 },
     { x: 300, y: 1050, w: 150, h: 150 },
-    { x: 1550, y: 1050, w: 150, h: 150 }
+    { x: 1550, y: 1050, w: 150, h: 150 },
+    { x: 600, y: 650, w: 80, h: 200 },
+    { x: 1320, y: 650, w: 80, h: 200 }
 ];
 
 let chestler = [
@@ -59,7 +66,7 @@ let chestler = [
 
 let aktifOyuncular = {};
 let mermiler = [];
-const NEON_RENKLER = ['#00ffcc', '#ff00ff', '#00ffff', '#ff5050', '#ffff00', '#ff9900'];
+const NEON_RENKLER = ['#00ffcc', '#ff00ff', '#00ffff', '#ff5050', '#ffff00', '#ff9900', '#9900ff', '#00ff66'];
 
 function carpismaVarMi(x, y, yaricap) {
     for (let d of DUVARLAR) {
@@ -79,40 +86,40 @@ function rastgeleSpawnBul() {
     return { x: 1000, y: 750 };
 }
 
-// TEK SAYFA YAPISI (KARAKTER SEÇİMİ VE OYUN BİR ARADA - SİYAH EKRAN HATASINI ÇÖZER)
+// OYUN ARAYÜZÜ (Karakter Tasarlama, Giriş ve Arena Bir Arada)
 app.get('/', (req, res) => {
     res.send(`
         <!DOCTYPE html><html><head><title>Bilgi Üssü Arena</title><style>
             body { background:#0a0a0a; color:#FFD700; font-family:'Segoe UI', sans-serif; margin:0; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; overflow:hidden; }
-            #girisEkrani { background:linear-gradient(145deg, #1e1e1e, #000); padding:30px; border-radius:20px; border:2px solid #FFD700; width:360px; text-align:center; box-shadow:0 0 30px rgba(255,215,0,0.2); }
-            input[type="text"] { width: 100%; padding: 12px; margin: 15px 0; border-radius: 8px; border: 1px solid #444; background: #111; color: #fff; box-sizing: border-box; text-align: center; font-size: 16px; outline: none; }
-            .btn { display:block; padding:12px; border-radius:10px; background:#FFD700; color:#000; font-weight:bold; cursor:pointer; border:none; width:100%; font-size:16px; transition:0.2s; }
+            #girisEkrani { background:linear-gradient(145deg, #1e1e1e, #000); padding:30px; border-radius:20px; border:2px solid #FFD700; width:380px; text-align:center; box-shadow:0 0 30px rgba(255,215,0,0.2); }
+            input[type="text"] { width: 100%; padding: 12px; margin: 12px 0; border-radius: 8px; border: 1px solid #444; background: #111; color: #fff; box-sizing: border-box; text-align: center; font-size: 16px; outline: none; }
+            .btn { display:block; padding:12px; border-radius:10px; background:#FFD700; color:#000; font-weight:bold; cursor:pointer; border:none; width:100%; font-size:16px; transition:0.2s; margin-top:10px; }
             .btn:hover { background:#ffc107; transform:scale(1.02); }
             
             #oyunAlani { display:none; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100vh; }
             canvas { background:#181818; border:4px solid #FFD700; box-shadow:0 0 30px rgba(255,215,0,0.4); cursor: crosshair; }
-            .ui { margin-bottom:6px; font-size:16px; color:#FFD700; font-weight:bold; }
+            .ui { margin-bottom:6px; font-size:18px; color:#FFD700; font-weight:bold; text-shadow: 0 0 10px rgba(255,215,0,0.5); }
             
-            #soruModal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(20, 20, 20, 0.95); border: 3px solid #FFD700; padding: 25px; border-radius: 15px; z-index: 10000; width: 400px; text-align: center; }
-            .secenekBtn { display: block; width: 100%; padding: 10px; margin: 8px 0; background: #333; color: #fff; border: 1px solid #FFD700; border-radius: 8px; cursor: pointer; font-size: 14px; }
+            #soruModal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(20, 20, 20, 0.96); border: 3px solid #FFD700; padding: 25px; border-radius: 15px; z-index: 10000; width: 420px; text-align: center; box-shadow: 0 0 40px rgba(0,0,0,0.8); }
+            .secenekBtn { display: block; width: 100%; padding: 12px; margin: 8px 0; background: #222; color: #fff; border: 1px solid #FFD700; border-radius: 8px; cursor: pointer; font-size: 14px; transition: 0.2s; }
             .secenekBtn:hover { background: #FFD700; color: #000; font-weight: bold; }
         </style></head><body>
 
             <div id="girisEkrani">
                 <h2>BİLGİ ÜSSÜ</h2>
-                <p style="font-size:13px; color:#aaa;">Fen Bilimleri Chest Arenası</p>
-                <input type="text" id="oyuncuAdi" placeholder="Oyuncu Adın" maxlength="12" value="Savaşçı">
+                <p style="font-size:13px; color:#aaa;">Fen Bilimleri Multimedya Arenası</p>
+                <input type="text" id="oyuncuAdi" placeholder="Oyuncu Adını Gir" maxlength="12" value="Savaşçı">
                 <button class="btn" onclick="oyunuBaslat()">Savaş Alanına Gir!</button>
             </div>
 
             <div id="oyunAlani">
-                <div class="ui">⭐ BİLGİ ÜSSÜ FEN ARENA ⭐</div>
-                <div style="font-size:12px; color:#aaa; margin-bottom:6px;">W,A,S,D ile hareket et | Sol tık ile ateş et</div>
-                <canvas id="arena" width="900" height="520"></canvas>
+                <div class="ui">⭐ BİLGİ ÜSSÜ ARENA ⭐</div>
+                <div style="font-size:12px; color:#aaa; margin-bottom:6px;">W, A, S, D ile hareket et | Sandıklardan soruları çöz, puanları topla!</div>
+                <canvas id="arena" width="920" height="540"></canvas>
             </div>
 
             <div id="soruModal">
-                <div id="soruBaslik" style="color:#FFD700; font-weight:bold; margin-bottom:12px; font-size:15px;">Soru</div>
+                <div id="soruBaslik" style="color:#FFD700; font-weight:bold; margin-bottom:15px; font-size:16px;">Soru</div>
                 <div id="seceneklerDiv"></div>
             </div>
 
@@ -125,10 +132,10 @@ app.get('/', (req, res) => {
                     document.getElementById('oyunAlani').style.display = 'flex';
 
                     socket = io({ query: { isim: isim } });
-                    baslatOyunDöngüsü();
+                    oyunDongusuBaslat();
                 }
 
-                function baslatOyunDöngüsü() {
+                function oyunDongusuBaslat() {
                     const canvas = document.getElementById('arena');
                     const ctx = canvas.getContext('2d');
 
@@ -163,13 +170,13 @@ app.get('/', (req, res) => {
 
                     socket.on('arenaGuncelle', (data) => { 
                         oyunVerisi = data; 
-                        cizimYap(); 
+                        ciz(); 
                     });
 
                     socket.on('soruGoster', (veri) => {
                         soruAcik = true;
                         document.getElementById('soruModal').style.display = 'block';
-                        document.getElementById('soruBaslik').innerText = "📦 " + veri.soruData.soru;
+                        document.getElementById('soruBaslik'].innerText = "📦 " + veri.soruData.soru;
 
                         let seceneklerDiv = document.getElementById('seceneklerDiv');
                         seceneklerDiv.innerHTML = '';
@@ -186,7 +193,7 @@ app.get('/', (req, res) => {
                         });
                     });
 
-                    function cizimYap() {
+                    function ciz() {
                         ctx.clearRect(0, 0, canvas.width, canvas.height);
                         let ben = oyunVerisi.players[socket.id];
                         let kameraX = ben ? Math.max(0, Math.min(ben.x - canvas.width / 2, ${HARITA_GENISLIK} - canvas.width)) : 0;
@@ -195,35 +202,56 @@ app.get('/', (req, res) => {
                         ctx.save();
                         ctx.translate(-kameraX, -kameraY);
 
+                        // Bölgeler
                         oyunVerisi.bolgeler.forEach(b => {
                             ctx.fillStyle = b.renk;
                             ctx.fillRect(b.x, b.y, b.w, b.h);
+                            ctx.fillStyle = b.yaziRengi || "#fff";
+                            ctx.font = "bold 20px sans-serif";
+                            ctx.fillText(b.isim, b.x + 40, b.y + 50);
                         });
 
-                        ctx.fillStyle = "#333";
-                        oyunVerisi.walls.forEach(w => ctx.fillRect(w.x, w.y, w.w, w.h));
+                        // Duvarlar
+                        ctx.fillStyle = "#222";
+                        oyunVerisi.walls.forEach(w => {
+                            ctx.fillRect(w.x, w.y, w.w, w.h);
+                            ctx.strokeStyle = "#444";
+                            ctx.strokeRect(w.x, w.y, w.w, w.h);
+                        });
 
+                        // Sandıklar
                         ctx.fillStyle = "#FFD700";
-                        oyunVerisi.chests.forEach(c => { if(c.aktif) ctx.fillRect(c.x - 15, c.y - 15, 30, 30); });
+                        oyunVerisi.chests.forEach(c => { 
+                            if(c.aktif) {
+                                ctx.fillRect(c.x - 16, c.y - 16, 32, 32);
+                                ctx.strokeStyle = "#fff";
+                                ctx.strokeRect(c.x - 16, c.y - 16, 32, 32);
+                            } 
+                        });
 
+                        // Mermiler
                         ctx.fillStyle = "#ff4757";
                         oyunVerisi.bullets.forEach(b => {
                             ctx.beginPath();
-                            ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
+                            ctx.arc(b.x, b.y, 6, 0, Math.PI * 2);
                             ctx.fill();
                         });
 
+                        // Oyuncular
                         for (let id in oyunVerisi.players) {
                             let p = oyunVerisi.players[id];
                             ctx.fillStyle = p.renk || "#00ffcc";
                             ctx.beginPath();
-                            ctx.arc(p.x, p.y, 20, 0, Math.PI * 2);
+                            ctx.arc(p.x, p.y, 22, 0, Math.PI * 2);
                             ctx.fill();
+                            ctx.strokeStyle = "#fff";
+                            ctx.lineWidth = 2;
+                            ctx.stroke();
 
                             ctx.fillStyle = "#fff";
-                            ctx.font = "12px sans-serif";
+                            ctx.font = "bold 13px sans-serif";
                             ctx.textAlign = "center";
-                            ctx.fillText(p.isim + " (" + p.skor + "⭐)", p.x, p.y - 25);
+                            ctx.fillText(p.isim + " (" + p.skor + " ⭐)", p.x, p.y - 30);
                         }
                         ctx.restore();
                     }
@@ -252,15 +280,15 @@ io.on('connection', (socket) => {
         if (!p) return;
         let yeniX = p.x + hareket.x;
         let yeniY = p.y + hareket.y;
-        if (!carpismaVarMi(yeniX, p.y, 20)) p.x = yeniX;
-        if (!carpismaVarMi(p.x, yeniY, 20)) p.y = yeniY;
+        if (!carpismaVarMi(yeniX, p.y, 22)) p.x = yeniX;
+        if (!carpismaVarMi(p.x, yeniY, 22)) p.y = yeniY;
 
         chestler.forEach(c => {
-            if (c.aktif && Math.hypot(p.x - c.x, p.y - c.y) < 30) {
+            if (c.aktif && Math.hypot(p.x - c.x, p.y - c.y) < 35) {
                 c.aktif = false;
                 let rastgeleSoru = FEN_SORULARI[Math.floor(Math.random() * FEN_SORULARI.length)];
                 socket.emit('soruGoster', { chestId: c.id, soruData: rastgeleSoru });
-                setTimeout(() => { c.aktif = true; }, 15000);
+                setTimeout(() => { c.aktif = true; }, 12000);
             }
         });
     });
@@ -276,7 +304,7 @@ io.on('connection', (socket) => {
         let p = aktifOyuncular[socket.id];
         if (!p) return;
         let aci = Math.atan2(hedef.y - p.y, hedef.x - p.x);
-        mermiler.push({ id: socket.id, x: p.x, y: p.y, vx: Math.cos(aci) * 12, vy: Math.sin(aci) * 12 });
+        mermiler.push({ id: socket.id, x: p.x, y: p.y, vx: Math.cos(aci) * 14, vy: Math.sin(aci) * 14 });
     });
 
     socket.on('disconnect', () => { delete aktifOyuncular[socket.id]; });
@@ -292,7 +320,7 @@ setInterval(() => {
             continue;
         }
         for (let id in aktifOyuncular) {
-            if (id !== m.id && Math.hypot(aktifOyuncular[id].x - m.x, aktifOyuncular[id].y - m.y) < 20) {
+            if (id !== m.id && Math.hypot(aktifOyuncular[id].x - m.x, aktifOyuncular[id].y - m.y) < 22) {
                 let katil = aktifOyuncular[m.id];
                 if (katil) katil.skor += 5;
                 let sp = rastgeleSpawnBul();
