@@ -1,8 +1,6 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const mysql = require('mysql2');
-const bodyParser = require('body-parser');
 const path = require('path');
 
 const app = express();
@@ -13,37 +11,14 @@ const io = new Server(server, {
 
 const PORT = process.env.PORT || 3000;
 
-app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
-app.use(bodyParser.json({ limit: '10mb' }));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 app.use(express.static(__dirname));
 app.use('/ses', express.static(path.join(__dirname, 'ses')));
 app.use('/muzik', express.static(path.join(__dirname, 'ses/muzik')));
 app.use('/karakterler', express.static(path.join(__dirname, 'karakterler')));
 
-// VERCEL ÇÖKMESİNİ ENGELLEYEN VERİTABANI BAĞLANTISI
-let db;
-if (process.env.DB_HOST) {
-    try {
-        db = mysql.createConnection({ 
-            host: process.env.DB_HOST, 
-            port: process.env.DB_PORT || 3306, 
-            user: process.env.DB_USER, 
-            password: process.env.DB_PASSWORD, 
-            database: process.env.DB_NAME 
-        });
-        db.connect((err) => {
-            if (err) console.log("⚠️ Veritabanı bağlantı hatası, bellek modunda devam ediliyor.");
-            else console.log("✅ Veritabanı bağlantısı başarılı.");
-        });
-    } catch(e) {
-        console.log("⚠️ Veritabanı bağlantısı atlandı.");
-    }
-} else {
-    console.log("ℹ️ Vercel / Bellek İçi Mod Aktif.");
-}
-
-// 100% HATASIZ VE DÜZENLENMİŞ FEN BİLİMLERİ CHEST SORULARI
 const FEN_SORULARI = [
     { soru: "Güneş'e en yakın olan gezegen hangisidir?", secenekler: ["Merkür", "Venüs", "Dünya", "Mars"], cevap: 0 },
     { soru: "Halkasıyla bilinen en büyük gaz devi gezegen hangisidir?", secenekler: ["Jüpiter", "Satürn", "Uranüs", "Neptün"], cevap: 1 },
@@ -54,12 +29,7 @@ const FEN_SORULARI = [
     { soru: "Güneş'e en uzak olan gezegen hangisidir?", secenekler: ["Uranüs", "Neptün", "Satürn", "Jüpiter"], cevap: 1 },
     { soru: "Güneş tutulmasında hangi gök cismi ortadadır?", secenekler: ["Dünya", "Güneş", "Ay", "Mars"], cevap: 2 },
     { soru: "Ay tutulmasında hangi gök cismi ortadadır?", secenekler: ["Ay", "Dünya", "Güneş", "Venüs"], cevap: 1 },
-    { soru: "Güneş tutulması olayı Ay'ın hangi evresinde gerçekleşir?", secenekler: ["Yeni Ay", "Dolunay", "İlk Dördün", "Son Dördün"], cevap: 0 },
-    { soru: "Dünya'nın tek doğal uydusu hangisidir?", secenekler: ["Güneş", "Ay", "Mars", "Titan"], cevap: 1 },
-    { soru: "Işık yılı hangi fiziksel niceliğin ölçüm birimidir?", secenekler: ["Zaman", "Mesafe", "Kütle", "Hız"], cevap: 1 },
-    { soru: "Canlıların canlılık özelliği gösteren en küçük yapı birimi nedir?", secenekler: ["Doku", "Organ", "Hücre", "Sistem"], cevap: 2 },
-    { soru: "Hücrenin yönetim ve kalıtım merkezi neresidir?", secenekler: ["Sitoplazma", "Çekirdek", "Hücre Zarı", "Mitokondri"], cevap: 1 },
-    { soru: "Hücrede hücresel solunum ile enerji üreten organel hangisidir?", secenekler: ["Ribozom", "Mitokondri", "Lizozom", "Golgi Cisimciği"], cevap: 1 }
+    { soru: "Güneş tutulması olayı Ay'ın hangi evresinde gerçekleşir?", secenekler: ["Yeni Ay", "Dolunay", "İlk Dördün", "Son Dördün"], cevap: 0 }
 ];
 
 const HARITA_GENISLIK = 2000;
@@ -99,155 +69,46 @@ let kalanMacSuresi = 300;
 
 const NEON_RENKLER = ['#00ffcc', '#ff00ff', '#00ffff', '#ff5050', '#ffff00', '#ff9900', '#9900ff', '#00ff66'];
 
-setInterval(() => {
-    if (kalanMacSuresi > 0) {
-        kalanMacSuresi--;
-    } else {
-        kalanMacSuresi = 300;
-        for(let id in aktifOyuncular) {
-            aktifOyuncular[id].skor = 0;
-            aktifOyuncular[id].can = 100;
-            let sp = rastgeleSpawnBul();
-            aktifOyuncular[id].x = sp.x;
-            aktifOyuncular[id].y = sp.y;
-        }
-        io.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '🏁 Maç süresi bitti! Skorlar sıfırlandı, yeni maç başladı!' });
-    }
-}, 1000);
-
 function carpismaVarMi(x, y, yaricap) {
     for (let d of DUVARLAR) {
         let closestX = Math.max(d.x, Math.min(x, d.x + d.w));
         let closestY = Math.max(d.y, Math.min(y, d.y + d.h));
         let distX = x - closestX;
         let distY = y - closestY;
-        if (Math.sqrt((distX * distX) + (distY * distY)) < yaricap) {
-            return true;
-        }
+        if (Math.sqrt((distX * distX) + (distY * distY)) < yaricap) return true;
     }
     return false;
 }
 
 function rastgeleSpawnBul() {
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 30; i++) {
         let rx = Math.floor(Math.random() * (HARITA_GENISLIK - 200)) + 100;
         let ry = Math.floor(Math.random() * (HARITA_YUKSEKLIK - 200)) + 100;
-        if (!carpismaVarMi(rx, ry, 30)) {
-            return { x: rx, y: ry };
-        }
+        if (!carpismaVarMi(rx, ry, 30)) return { x: rx, y: ry };
     }
     return { x: 1000, y: 750 };
 }
 
-const layout = (content, title = "BİLGİ ÜSSÜ - BRAWL ARENA") => `
-    <!DOCTYPE html><html><head><title>${title}</title><style>
-        body { background:#0a0a0a; color:#FFD700; font-family: 'Segoe UI', sans-serif; margin:0; min-height:100vh; display:flex; justify-content:center; align-items:center; }
-        .box { background:linear-gradient(145deg, #1e1e1e, #000); padding:40px; border-radius:20px; border:2px solid #FFD700; width:500px; text-align:center; box-shadow:0 0 40px rgba(255,215,0,0.2); }
-        .btn { display:block; padding:15px; margin:10px 0; border-radius:10px; background:#FFD700; color:#000; font-weight:bold; text-decoration:none; cursor:pointer; border:none; transition:0.3s; font-size:16px; width:100%; box-sizing:border-box; }
-        .btn:hover { background:#ffc107; transform:scale(1.02); }
-    </style></head><body>
-        <div class="box">${content}</div>
-    </body></html>`;
-
-app.get('/', (req, res) => res.send(layout(`
-    <h1>BİLGİ ÜSSÜ</h1>
-    <p>Fen Bilimleri Kaliteli Chest Soruları & Arena</p><br>
-    <a href="/karakter-sec" class="btn" style="background:#ff4757; color:#fff;">🎨 Karakterini Tasarla ve Başla</a>
-`)));
+app.get('/', (req, res) => res.redirect('/karakter-sec'));
 
 app.get('/karakter-sec', (req, res) => {
     res.send(`
-        <!DOCTYPE html><html><head><title>Karakter Tasarımı</title><style>
+        <!DOCTYPE html><html><head><title>Karakter Seçimi</title><style>
             body { background:#0a0a0a; color:#FFD700; font-family:'Segoe UI', sans-serif; margin:0; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; }
-            .box { background:linear-gradient(145deg, #1e1e1e, #000); padding:25px; border-radius:20px; border:2px solid #FFD700; width:420px; text-align:center; box-shadow:0 0 30px rgba(255,215,0,0.2); }
-            input[type="text"], input[type="file"], input[type="color"] { width: 100%; padding: 8px; margin: 6px 0; border-radius: 8px; border: 1px solid #444; background: #111; color: #fff; box-sizing: border-box; text-align: center; font-size: 14px; }
-            input[type="file"] { cursor: pointer; padding: 6px; }
-            .btn { display:block; padding:12px; margin-top:10px; border-radius:10px; background:#FFD700; color:#000; font-weight:bold; text-decoration:none; cursor:pointer; border:none; width:100%; font-size:15px; transition:0.3s; }
-            .btn:hover { background:#ffc107; transform:scale(1.02); }
-            canvas { background:#222; border:3px solid #FFD700; border-radius:50%; cursor:crosshair; box-shadow:0 0 15px rgba(255,215,0,0.3); margin: 8px auto; display:block; }
+            .box { background:linear-gradient(145deg, #1e1e1e, #000); padding:25px; border-radius:20px; border:2px solid #FFD700; width:350px; text-align:center; box-shadow:0 0 30px rgba(255,215,0,0.2); }
+            input[type="text"] { width: 100%; padding: 10px; margin: 10px 0; border-radius: 8px; border: 1px solid #444; background: #111; color: #fff; box-sizing: border-box; text-align: center; font-size: 14px; }
+            .btn { display:block; padding:12px; margin-top:10px; border-radius:10px; background:#FFD700; color:#000; font-weight:bold; cursor:pointer; border:none; width:100%; font-size:15px; }
         </style></head><body>
             <div class="box">
-                <h2>ÖZEL KARAKTER TASARIMI</h2>
-                <p style="font-size:12px; color:#aaa;">Fen Bilgisi Chest Arenası</p>
-                
+                <h2>BİLGİ ÜSSÜ</h2>
+                <p style="font-size:12px; color:#aaa;">Oyuncu Adını Gir ve Arenaya Katıl</p>
                 <input type="text" id="oyuncuAdi" placeholder="Oyuncu Adın" maxlength="12" value="Savaşçı">
-                
-                <div style="text-align:left; font-size:12px; color:#FFD700; margin-top:4px;">Karakter Görseli Seç:</div>
-                <input type="file" id="dosyaSecici" accept="image/*" onchange="resimYukle(event)">
-
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
-                    <span style="font-size:12px; color:#FFD700;">Fırça Rengi:</span>
-                    <input type="color" id="fircaRengi" value="#FF4757" style="width:70%; height:35px; padding:2px; cursor:pointer;">
-                </div>
-
-                <canvas id="tasarimCanvas" width="130" height="130"></canvas>
-                
-                <div style="display:flex; gap:10px;">
-                    <button type="button" class="btn" style="background:#333; color:#FFD700; padding:8px; font-size:12px;" onclick="temizleCanvas()">Temizle</button>
-                    <button type="button" class="btn" style="padding:8px; font-size:12px;" onclick="oyunaBasla()">Savaş Alanına Gir!</button>
-                </div>
-                
-                <br><a href="/" style="color:#888; font-size:12px; text-decoration:none;">Ana Sayfaya Dön</a>
+                <button class="btn" onclick="oyunaBasla()">Savaş Alanına Gir!</button>
             </div>
             <script>
-                const canvas = document.getElementById('tasarimCanvas');
-                const ctx = canvas.getContext('2d');
-                let ciziyor = false;
-
-                ctx.fillStyle = "#111";
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                canvas.addEventListener('mousedown', (e) => { ciziyor = true; ciz(e); });
-                window.addEventListener('mouseup', () => ciziyor = false);
-                canvas.addEventListener('mousemove', ciz);
-
-                function ciz(e) {
-                    if (!ciziyor) return;
-                    const rect = canvas.getBoundingClientRect();
-                    let x = e.clientX - rect.left;
-                    let y = e.clientY - rect.top;
-
-                    ctx.fillStyle = document.getElementById('fircaRengi').value;
-                    ctx.beginPath();
-                    ctx.arc(x, y, 6, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-
-                function resimYukle(event) {
-                    const file = event.target.files[0];
-                    if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = function(f) {
-                        const img = new Image();
-                        img.onload = function() {
-                            ctx.clearRect(0, 0, canvas.width, canvas.height);
-                            let sourceWidth = img.width;
-                            let sourceHeight = img.height;
-                            let size = Math.min(sourceWidth, sourceHeight);
-                            let sourceX = (sourceWidth - size) / 2;
-                            let sourceY = (sourceHeight - size) / 2;
-
-                            ctx.fillStyle = "#111";
-                            ctx.fillRect(0, 0, canvas.width, canvas.height);
-                            ctx.drawImage(img, sourceX, sourceY, size, size, 0, 0, canvas.width, canvas.height);
-                        }
-                        img.src = f.target.result;
-                    }
-                    reader.readAsDataURL(file);
-                }
-
-                function temizleCanvas() {
-                    ctx.fillStyle = "#111";
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                }
-
                 function oyunaBasla() {
                     let isim = document.getElementById('oyuncuAdi').value || 'Savaşçı';
-                    let avatarData = canvas.toDataURL();
-                    
                     sessionStorage.setItem('oyuncuIsim', isim);
-                    sessionStorage.setItem('oyuncuAvatar', avatarData);
-                    
                     window.location.href = '/oyun-alani';
                 }
             </script>
@@ -257,278 +118,60 @@ app.get('/karakter-sec', (req, res) => {
 
 app.get('/oyun-alani', (req, res) => {
     res.send(`
-        <!DOCTYPE html><html><head><title>Fen Bilimleri Chest Arena</title><style>
+        <!DOCTYPE html><html><head><title>Fen Bilimleri Arena</title><style>
             body { background:#0f0f0f; color:#fff; margin:0; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; font-family:sans-serif; overflow:hidden; }
             canvas { background:#181818; border:4px solid #FFD700; box-shadow:0 0 30px rgba(255,215,0,0.4); cursor: crosshair; }
             .ui { margin-bottom:4px; font-size:16px; color:#FFD700; font-weight:bold; }
-            .bilgi { font-size:12px; color:#aaa; margin-bottom:4px; }
-            
-            #muzikPaneli { position: fixed; top: 15px; right: 20px; background: rgba(20, 20, 20, 0.9); border: 2px solid #FFD700; padding: 8px 12px; border-radius: 10px; z-index: 1000; display: flex; align-items: center; gap: 8px; box-shadow: 0 0 15px rgba(255,215,0,0.3); }
-            #muzikPaneli button { background: #333; color: #FFD700; border: 1px solid #FFD700; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; transition: 0.2s; }
-            #muzikPaneli button:hover { background: #FFD700; color: #000; }
-
-            #ustPanel { position: fixed; top: 15px; left: 20px; display: flex; gap: 15px; z-index: 1000; font-family: monospace; }
-            .panelKutusu { background: rgba(20, 20, 20, 0.9); border: 2px solid #FFD700; padding: 8px 12px; border-radius: 10px; box-shadow: 0 0 15px rgba(255,215,0,0.3); color: #FFD700; font-size: 13px; }
-            #skorTablosuListesi { margin: 4px 0 0 0; padding-left: 15px; font-size: 11px; color: #fff; text-align: left; max-height: 80px; overflow-y: auto; }
-
-            #soruModal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(20, 20, 20, 0.95); border: 3px solid #FFD700; padding: 25px; border-radius: 15px; z-index: 10000; width: 450px; text-align: center; box-shadow: 0 0 50px rgba(255,215,0,0.5); }
-            #soruBaslik { font-size: 16px; color: #FFD700; margin-bottom: 15px; font-weight: bold; }
-            .secenekBtn { display: block; width: 100%; padding: 10px; margin: 8px 0; background: #333; color: #fff; border: 1px solid #FFD700; border-radius: 8px; cursor: pointer; font-size: 14px; transition: 0.2s; }
+            #soruModal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(20, 20, 20, 0.95); border: 3px solid #FFD700; padding: 25px; border-radius: 15px; z-index: 10000; width: 400px; text-align: center; }
+            .secenekBtn { display: block; width: 100%; padding: 10px; margin: 8px 0; background: #333; color: #fff; border: 1px solid #FFD700; border-radius: 8px; cursor: pointer; }
             .secenekBtn:hover { background: #FFD700; color: #000; font-weight: bold; }
-
-            #adminSifreModal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15, 15, 15, 0.98); border: 3px solid #ff8c00; padding: 25px; border-radius: 15px; z-index: 30000; width: 350px; text-align: center; box-shadow: 0 0 50px rgba(255,140,0,0.5); font-family: monospace; }
-            #adminSifreModal h3 { color: #ff8c00; margin-top: 0; }
-            #sifreInput { width: 100%; background: #000; border: 2px solid #ff8c00; color: #fff; padding: 10px; font-size: 16px; outline: none; border-radius: 6px; box-sizing: border-box; text-align: center; margin-bottom: 10px; }
-
-            #adminKonsol { display: none; position: fixed; top: 0; left: 0; width: 100%; background: rgba(15, 15, 15, 0.95); border-bottom: 3px solid #ff8c00; padding: 15px 30px; box-sizing: border-box; z-index: 20000; box-shadow: 0 10px 30px rgba(255,140,0,0.3); font-family: monospace; }
-            #adminKonsol h3 { margin: 0 0 8px 0; color: #ff8c00; font-size: 15px; letter-spacing: 1px; }
-            #adminKonsol p { margin: 0 0 10px 0; color: #aaa; font-size: 12px; }
-            #adminInput { width: 100%; background: #000; border: 2px solid #ff8c00; color: #00ffcc; padding: 10px; font-size: 15px; outline: none; border-radius: 6px; box-sizing: border-box; font-family: monospace; }
-
-            #chatContainer { position: fixed; bottom: 20px; left: 20px; width: 350px; z-index: 999; display: flex; flex-direction: column; pointer-events: none; }
-            #chatGecmisi { display: flex; flex-direction: column; gap: 4px; max-height: 150px; overflow: hidden; margin-bottom: 6px; }
-            .chat-satir { background: rgba(0, 0, 0, 0.45); color: #fff; padding: 4px 8px; font-size: 13px; border-radius: 3px; width: fit-content; text-shadow: 1px 1px 1px #000; font-family: monospace; }
-            #chatInput { display: none; width: 100%; background: rgba(0, 0, 0, 0.85); border: 2px solid #FFD700; color: #fff; padding: 8px; font-size: 14px; outline: none; border-radius: 4px; pointer-events: auto; font-family: monospace; box-sizing: border-box; }
-
-            #killFeed { position: fixed; top: 70px; right: 20px; display: flex; flex-direction: column; gap: 5px; z-index: 999; pointer-events: none; align-items: flex-end; }
-            .kill-msg { background: rgba(0, 0, 0, 0.65); border-left: 4px solid #ff4757; color: #fff; padding: 6px 12px; font-size: 13px; font-weight: bold; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
         </style></head><body>
-            <div class="ui">⭐ BİLGİ ÜSSÜ FEN BİLİMLERİ ARENA ⭐</div>
-            <div class="bilgi">Hareket: <b>W,A,S,D</b> | Ateş Et: <b>Sol Tık</b> | <a href="/karakter-sec" style="color:#ff4757; text-decoration:none;">Karakter Değiştir</a></div>
-            
-            <div id="ustPanel">
-                <div class="panelKutusu">
-                    ⏱️ Maç Süresi: <b id="sayacGosterge" style="color:#fff;">05:00</b>
-                </div>
-                <div class="panelKutusu" style="min-width: 160px;">
-                    🏆 <b>Skor Tablosu</b>
-                    <ul id="skorTablosuListesi"></ul>
-                </div>
-            </div>
-
-            <div id="muzikPaneli">
-                <span id="sesIkona" style="cursor:pointer; font-size:18px;" onclick="toggleMuzik()" title="Sesi Aç/Kapat">🔊</span>
-                <button onclick="oynat('pixel-drift.mp3')">Pixel Drift</button>
-                <button onclick="oynat('asphalt-menace.mp3')">Asphalt Menace</button>
-                <button onclick="oynat('cybernetic-assault.mp3')">Cybernetic Assault</button>
-            </div>
-
-            <div id="adminSifreModal">
-                <h3>🔒 YÖNETİCİ ŞİFRESİ GEREKLİ</h3>
-                <p style="font-size:12px; color:#aaa;">Hile konsolunu açmak için şifreyi gir:</p>
-                <input type="password" id="sifreInput" placeholder="Şifre" autocomplete="off">
-                <button class="secenekBtn" onclick="sifreyiKontrolEt()" style="background:#ff8c00; color:#000; font-weight:bold;">Giriş Yap</button>
-            </div>
-
-            <div id="adminKonsol">
-                <h3>⚡ YÖNETİCİ GİZLİ KOMUT KONSOLU</h3>
-                <p>Komutlar: <b>god [saniye]</b> | <b>speed [hız]</b> | <b>invisibility [saniye]</b></p>
-                <input type="text" id="adminInput" placeholder="Komut yaz ve Enter'a bas" autocomplete="off">
-            </div>
-
+            <div class="ui">⭐ BİLGİ ÜSSÜ ARENA ⭐</div>
             <div id="soruModal">
-                <div id="soruBaslik">Soru Yükleniyor...</div>
+                <div id="soruBaslik" style="color:#FFD700; font-weight:bold; margin-bottom:10px;">Soru</div>
                 <div id="seceneklerDiv"></div>
             </div>
-
-            <div id="killFeed"></div>
-
-            <div id="chatContainer">
-                <div id="chatGecmisi"></div>
-                <input type="text" id="chatInput" placeholder="Mesaj yazmak için Enter'a bas..." autocomplete="off">
-            </div>
-
             <canvas id="arena" width="900" height="550"></canvas>
             
             <script src="/socket.io/socket.io.js"></script>
             <script>
-                let muzik = window.muzik || new Audio(sessionStorage.getItem('muzikSrc') || '/muzik/pixel-drift.mp3');
-                window.muzik = muzik;
-                muzik.loop = true;
-                muzik.volume = 0.4;
-                
-                window.onload = () => {
-                    muzik.currentTime = parseFloat(sessionStorage.getItem('muzikTime')) || 0;
-                    if(sessionStorage.getItem('muzikPlaying') === 'true') {
-                        muzik.play().catch(e => console.log("Oto-oynatma engellendi"));
-                    }
-                };
-                setInterval(() => sessionStorage.setItem('muzikTime', muzik.currentTime), 500);
-
-                function oynat(dosyaAdi) { 
-                    muzik.src = '/muzik/' + dosyaAdi; 
-                    sessionStorage.setItem('muzikSrc', '/muzik/' + dosyaAdi); 
-                    muzik.play(); 
-                    sessionStorage.setItem('muzikPlaying', 'true'); 
-                    document.getElementById('sesIkona').innerText = '🔊';
-                }
-
-                function toggleMuzik() {
-                    if(muzik.paused) { 
-                        muzik.play(); 
-                        sessionStorage.setItem('muzikPlaying', 'true'); 
-                        document.getElementById('sesIkona').innerText = '🔊'; 
-                    } else { 
-                        muzik.pause(); 
-                        sessionStorage.setItem('muzikPlaying', 'false'); 
-                        document.getElementById('sesIkona').innerText = '🔇'; 
-                    }
-                }
-
                 const isim = sessionStorage.getItem('oyuncuIsim') || 'Savaşçı';
-                const benimAvatarim = sessionStorage.getItem('oyuncuAvatar') || '';
-
-                const socket = io({ query: { isim: isim }, forceNew: true, transports: ['websocket', 'polling'] });
-                socket.on('connect', () => { socket.emit('avatarGuncelle', benimAvatarim); });
+                const socket = io({ query: { isim: isim } });
 
                 const canvas = document.getElementById('arena');
                 const ctx = canvas.getContext('2d');
 
-                let oyunVerisi = { players: {}, bullets: [], walls: ${JSON.stringify(DUVARLAR)}, chests: ${JSON.stringify(chestler)}, bolgeler: ${JSON.stringify(BOLGELER)}, kalanSure: 300 };
-                let loadedImages = {};
-                let chestImg = new Image();
-                chestImg.src = '/karakterler/Chest.webp';
-
+                let oyunVerisi = { players: {}, bullets: [], walls: ${JSON.stringify(DUVARLAR)}, chests: ${JSON.stringify(chestler)}, bolgeler: ${JSON.stringify(BOLGELER)} };
                 let tuslar = {};
-                let chatAcik = false;
                 let soruAcik = false;
-                let adminKonsolAcik = false;
-                let sifreModalAcik = false;
 
-                window.addEventListener('keydown', (e) => {
-                    if (soruAcik) return;
-
-                    if (e.shiftKey && e.key === 'Escape') {
-                        e.preventDefault();
-                        adminKonsolAcik = false;
-                        document.getElementById('adminKonsol').style.display = 'none';
-
-                        sifreModalAcik = true;
-                        let modal = document.getElementById('adminSifreModal');
-                        modal.style.display = 'block';
-                        
-                        let sifreInput = document.getElementById('sifreInput');
-                        sifreInput.value = '';
-                        sifreInput.blur();
-                        setTimeout(() => sifreInput.focus(), 50);
-                        return;
-                    }
-
-                    if (e.key.toLowerCase() === 't' && !chatAcik && !adminKonsolAcik && !sifreModalAcik) {
-                        e.preventDefault();
-                        chatAcik = true;
-                        let input = document.getElementById('chatInput');
-                        input.style.display = 'block';
-                        input.focus();
-                    } else if (e.key === 'Escape' && chatAcik) {
-                        chatAcik = false;
-                        document.getElementById('chatInput').style.display = 'none';
-                    }
-                    if (!chatAcik && !adminKonsolAcik && !sifreModalAcik) tuslar[e.key.toLowerCase()] = true;
-                });
-
-                window.addEventListener('keyup', (e) => { if (!chatAcik && !adminKonsolAcik && !sifreModalAcik) tuslar[e.key.toLowerCase()] = false; });
-
-                function sifreyiKontrolEt() {
-                    let girilenSifre = document.getElementById('sifreInput').value;
-                    if (girilenSifre === '0707') {
-                        sifreModalAcik = false;
-                        document.getElementById('adminSifreModal').style.display = 'none';
-                        
-                        adminKonsolAcik = true;
-                        let konsol = document.getElementById('adminKonsol');
-                        konsol.style.display = 'block';
-                        
-                        let adminInput = document.getElementById('adminInput');
-                        adminInput.value = '';
-                        adminInput.blur();
-                        setTimeout(() => adminInput.focus(), 50);
-                    } else {
-                        alert('Hatalı Yönetici Şifresi!');
-                        document.getElementById('sifreInput').value = '';
-                    }
-                }
-
-                document.getElementById('sifreInput').addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') sifreyiKontrolEt();
-                    else if (e.key === 'Escape') { sifreModalAcik = false; document.getElementById('adminSifreModal').style.display = 'none'; }
-                });
-
-                document.getElementById('adminInput').addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        let komutMetni = e.target.value.trim();
-                        if (komutMetni.length > 0) socket.emit('adminKomut', komutMetni);
-                        e.target.value = '';
-                        document.getElementById('adminKonsol').style.display = 'none';
-                        adminKonsolAcik = false;
-                    } else if (e.key === 'Escape') {
-                        document.getElementById('adminKonsol').style.display = 'none';
-                        adminKonsolAcik = false;
-                    }
-                });
-
-                document.getElementById('chatInput').addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        let mesaj = e.target.value.trim();
-                        if (mesaj.length > 0) socket.emit('chatMesaji', mesaj);
-                        e.target.value = '';
-                        e.target.style.display = 'none';
-                        chatAcik = false;
-                    }
-                });
+                window.addEventListener('keydown', (e) => { if(!soruAcik) tuslar[e.key.toLowerCase()] = true; });
+                window.addEventListener('keyup', (e) => { if(!soruAcik) tuslar[e.key.toLowerCase()] = false; });
 
                 window.addEventListener('mousedown', (e) => {
-                    if (chatAcik || soruAcik || adminKonsolAcik || sifreModalAcik || e.button !== 0) return; 
+                    if (soruAcik || e.button !== 0) return;
                     const rect = canvas.getBoundingClientRect();
-                    let tikX = e.clientX - rect.left;
-                    let tikY = e.clientY - rect.top;
-
-                    let benimId = socket.id;
-                    let ben = oyunVerisi.players[benimId];
+                    let ben = oyunVerisi.players[socket.id];
                     if (!ben) return;
 
                     let kameraX = Math.max(0, Math.min(ben.x - canvas.width / 2, ${HARITA_GENISLIK} - canvas.width));
                     let kameraY = Math.max(0, Math.min(ben.y - canvas.height / 2, ${HARITA_YUKSEKLIK} - canvas.height));
 
-                    socket.emit('atesEt', { x: tikX + kameraX, y: tikY + kameraY });
+                    socket.emit('atesEt', { x: e.clientX - rect.left + kameraX, y: e.clientY - rect.top + kameraY });
                 });
 
                 setInterval(() => {
-                    if (chatAcik || soruAcik || adminKonsolAcik || sifreModalAcik) return;
+                    if (soruAcik) return;
                     let hareket = {x: 0, y: 0};
-                    let benimId = socket.id;
-                    let ben = oyunVerisi.players[benimId];
-                    let hiz = (ben && ben.ozelHiz) ? ben.ozelHiz : 6;
-
-                    if(tuslar['w'] || tuslar['arrowup']) hareket.y = -hiz;
-                    if(tuslar['s'] || tuslar['arrowdown']) hareket.y = hiz;
-                    if(tuslar['a'] || tuslar['arrowleft']) hareket.x = -hiz;
-                    if(tuslar['d'] || tuslar['arrowright']) hareket.x = hiz;
-
+                    if(tuslar['w'] || tuslar['arrowup']) hareket.y = -6;
+                    if(tuslar['s'] || tuslar['arrowdown']) hareket.y = 6;
+                    if(tuslar['a'] || tuslar['arrowleft']) hareket.x = -6;
+                    if(tuslar['d'] || tuslar['arrowright']) hareket.x = 6;
                     if(hareket.x !== 0 || hareket.y !== 0) socket.emit('hareketEt', hareket);
-                }, 1000 / 60);
+                }, 1000 / 30);
 
                 socket.on('arenaGuncelle', (data) => { 
                     oyunVerisi = data; 
-                    
-                    let dk = Math.floor(data.kalanSure / 60);
-                    let sn = data.kalanSure % 60;
-                    let sayacEl = document.getElementById('sayacGosterge');
-                    if (sayacEl) {
-                        sayacEl.innerText = (dk < 10 ? '0' + dk : dk) + ':' + (sn < 10 ? '0' + sn : sn);
-                    }
-                    
-                    let liste = document.getElementById('skorTablosuListesi');
-                    if (liste) {
-                        liste.innerHTML = '';
-                        let oyuncuDizi = Object.values(data.players).sort((a, b) => b.skor - a.skor);
-                        oyuncuDizi.slice(0, 5).forEach((p, index) => {
-                            let li = document.createElement('li');
-                            li.innerHTML = `${index + 1}. ${p.isim}: <b style="color:#FFD700;">${p.skor}⭐</b>`;
-                            liste.appendChild(li);
-                        });
-                    }
-
                     cizimYap(); 
                 });
 
@@ -539,7 +182,6 @@ app.get('/oyun-alani', (req, res) => {
 
                     let seceneklerDiv = document.getElementById('seceneklerDiv');
                     seceneklerDiv.innerHTML = '';
-
                     veri.soruData.secenekler.forEach((sec, index) => {
                         let btn = document.createElement('button');
                         btn.className = 'secenekBtn';
@@ -553,113 +195,44 @@ app.get('/oyun-alani', (req, res) => {
                     });
                 });
 
-                socket.on('olumBildirimi', (mesaj) => {
-                    const killFeed = document.getElementById('killFeed');
-                    const div = document.createElement('div');
-                    div.className = 'kill-msg';
-                    div.innerText = mesaj;
-                    killFeed.appendChild(div);
-                    setTimeout(() => div.remove(), 4000);
-                });
-
-                socket.on('chatMesajiGelsin', (data) => {
-                    const chatGecmisi = document.getElementById('chatGecmisi');
-                    const div = document.createElement('div');
-                    div.className = 'chat-satir';
-                    div.innerHTML = `<b style="color: #FFD700;">${data.isim}:</b> ${data.mesaj}`;
-                    chatGecmisi.appendChild(div);
-                    if (chatGecmisi.children.length > 6) chatGecmisi.children[0].remove();
-                    chatGecmisi.scrollTop = chatGecmisi.scrollHeight;
-                });
-
                 function cizimYap() {
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    
-                    let benimId = socket.id;
-                    let ben = oyunVerisi.players[benimId];
-
-                    let kameraX = 0, kameraY = 0;
-                    if (ben) {
-                        kameraX = Math.max(0, Math.min(ben.x - canvas.width / 2, ${HARITA_GENISLIK} - canvas.width));
-                        kameraY = Math.max(0, Math.min(ben.y - canvas.height / 2, ${HARITA_YUKSEKLIK} - canvas.height));
-                    }
+                    let ben = oyunVerisi.players[socket.id];
+                    let kameraX = ben ? Math.max(0, Math.min(ben.x - canvas.width / 2, ${HARITA_GENISLIK} - canvas.width)) : 0;
+                    let kameraY = ben ? Math.max(0, Math.min(ben.y - canvas.height / 2, ${HARITA_YUKSEKLIK} - canvas.height)) : 0;
 
                     ctx.save();
                     ctx.translate(-kameraX, -kameraY);
 
-                    if (oyunVerisi.bolgeler) {
-                        oyunVerisi.bolgeler.forEach(b => {
-                            ctx.fillStyle = b.renk;
-                            ctx.fillRect(b.x, b.y, b.w, b.h);
-                            ctx.fillStyle = b.yaziRengi;
-                            ctx.font = "bold 28px sans-serif";
-                            ctx.fillText(b.isim, b.x + 40, b.y + 50);
-                        });
-                    }
+                    oyunVerisi.bolgeler.forEach(b => {
+                        ctx.fillStyle = b.renk;
+                        ctx.fillRect(b.x, b.y, b.w, b.h);
+                    });
 
-                    if (oyunVerisi.walls) {
-                        ctx.fillStyle = "#333";
-                        ctx.strokeStyle = "#FFD700";
-                        ctx.lineWidth = 2;
-                        oyunVerisi.walls.forEach(w => {
-                            ctx.fillRect(w.x, w.y, w.w, w.h);
-                            ctx.strokeRect(w.x, w.y, w.w, w.h);
-                        });
-                    }
+                    ctx.fillStyle = "#333";
+                    oyunVerisi.walls.forEach(w => ctx.fillRect(w.x, w.y, w.w, w.h));
 
-                    if (oyunVerisi.chests) {
-                        oyunVerisi.chests.forEach(c => {
-                            if (c.aktif) {
-                                if (chestImg.complete) {
-                                    ctx.drawImage(chestImg, c.x - 20, c.y - 20, 40, 40);
-                                } else {
-                                    ctx.fillStyle = "#FFD700";
-                                    ctx.fillRect(c.x - 20, c.y - 20, 40, 40);
-                                }
-                            }
-                        });
-                    }
+                    ctx.fillStyle = "#FFD700";
+                    oyunVerisi.chests.forEach(c => { if(c.aktif) ctx.fillRect(c.x - 15, c.y - 15, 30, 30); });
 
-                    if (oyunVerisi.bullets) {
-                        oyunVerisi.bullets.forEach(b => {
-                            ctx.fillStyle = "#ff4757";
-                            ctx.beginPath();
-                            ctx.arc(b.x, b.y, 6, 0, Math.PI * 2);
-                            ctx.fill();
-                        });
-                    }
+                    ctx.fillStyle = "#ff4757";
+                    oyunVerisi.bullets.forEach(b => {
+                        ctx.beginPath();
+                        ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
+                        ctx.fill();
+                    });
 
                     for (let id in oyunVerisi.players) {
                         let p = oyunVerisi.players[id];
-                        if (p.gorunmez) continue;
-
-                        if (p.avatarData) {
-                            if (!loadedImages[id]) {
-                                loadedImages[id] = new Image();
-                                loadedImages[id].src = p.avatarData;
-                            }
-                            ctx.save();
-                            ctx.beginPath();
-                            ctx.arc(p.x, p.y, 25, 0, Math.PI * 2);
-                            ctx.clip();
-                            ctx.drawImage(loadedImages[id], p.x - 25, p.y - 25, 50, 50);
-                            ctx.restore();
-                        } else {
-                            ctx.fillStyle = p.renk || "#00ffcc";
-                            ctx.beginPath();
-                            ctx.arc(p.x, p.y, 25, 0, Math.PI * 2);
-                            ctx.fill();
-                        }
-
-                        ctx.fillStyle = "#ff4757";
-                        ctx.fillRect(p.x - 25, p.y - 35, 50, 6);
-                        ctx.fillStyle = "#2ed573";
-                        ctx.fillRect(p.x - 25, p.y - 35, (p.can / 100) * 50, 6);
+                        ctx.fillStyle = p.renk || "#00ffcc";
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, 20, 0, Math.PI * 2);
+                        ctx.fill();
 
                         ctx.fillStyle = "#fff";
-                        ctx.font = "bold 12px sans-serif";
+                        ctx.font = "12px sans-serif";
                         ctx.textAlign = "center";
-                        ctx.fillText(p.isim, p.x, p.y - 42);
+                        ctx.fillText(p.isim + " (" + p.skor + "⭐)", p.x, p.y - 25);
                     }
 
                     ctx.restore();
@@ -680,18 +253,8 @@ io.on('connection', (socket) => {
         y: spawn.y,
         can: 100,
         skor: 0,
-        renk: NEON_RENKLER[Math.floor(Math.random() * NEON_RENKLER.length)],
-        avatarData: '',
-        ozelHiz: 6,
-        godMode: false,
-        gorunmez: false
+        renk: NEON_RENKLER[Math.floor(Math.random() * NEON_RENKLER.length)]
     };
-
-    socket.on('avatarGuncelle', (avatarData) => {
-        if (aktifOyuncular[socket.id]) {
-            aktifOyuncular[socket.id].avatarData = avatarData;
-        }
-    });
 
     socket.on('hareketEt', (hareket) => {
         let p = aktifOyuncular[socket.id];
@@ -700,39 +263,23 @@ io.on('connection', (socket) => {
         let yeniX = p.x + hareket.x;
         let yeniY = p.y + hareket.y;
 
-        if (!carpismaVarMi(yeniX, p.y, 25)) p.x = yeniX;
-        if (!carpismaVarMi(p.x, yeniY, 25)) p.y = yeniY;
+        if (!carpismaVarMi(yeniX, p.y, 20)) p.x = yeniX;
+        if (!carpismaVarMi(p.x, yeniY, 20)) p.y = yeniY;
 
         chestler.forEach(c => {
-            if (c.aktif) {
-                let dist = Math.hypot(p.x - c.x, p.y - c.y);
-                if (dist < 35) {
-                    c.aktif = false;
-                    let rastgeleSoru = FEN_SORULARI[Math.floor(Math.random() * FEN_SORULARI.length)];
-                    socket.emit('soruGoster', { chestId: c.id, soruData: rastgeleSoru });
-
-                    setTimeout(() => { c.aktif = true; }, 15000);
-                }
+            if (c.aktif && Math.hypot(p.x - c.x, p.y - c.y) < 30) {
+                c.aktif = false;
+                let rastgeleSoru = FEN_SORULARI[Math.floor(Math.random() * FEN_SORULARI.length)];
+                socket.emit('soruGoster', { chestId: c.id, soruData: rastgeleSoru });
+                setTimeout(() => { c.aktif = true; }, 15000);
             }
         });
     });
 
     socket.on('cevapVer', (data) => {
         let p = aktifOyuncular[socket.id];
-        if (!p) return;
-
-        if (data.secilenIndex === data.dogruCevap) {
-            p.skor = p.skor === 0 ? 2 : p.skor * 2;
-            p.can = 100;
-            socket.emit('chatMesajiGelsin', { 
-                isim: 'SİSTEM', 
-                mesaj: `🎉 Doğru Cevap! Puanın 2'ye katlandı (${p.skor} Puan) ve Canın Fullendi! ❤️` 
-            });
-        } else {
-            socket.emit('chatMesajiGelsin', { 
-                isim: 'SİSTEM', 
-                mesaj: '❌ Yanlış Cevap! Şansını tekrar dene.' 
-            });
+        if (p && data.secilenIndex === data.dogruCevap) {
+            p.skor += 10;
         }
     });
 
@@ -741,42 +288,7 @@ io.on('connection', (socket) => {
         if (!p) return;
 
         let aci = Math.atan2(hedef.y - p.y, hedef.x - p.x);
-        mermiler.push({
-            id: socket.id,
-            x: p.x,
-            y: p.y,
-            vx: Math.cos(aci) * 12,
-            vy: Math.sin(aci) * 12
-        });
-    });
-
-    socket.on('chatMesaji', (mesaj) => {
-        let p = aktifOyuncular[socket.id];
-        if (p) {
-            io.emit('chatMesajiGelsin', { isim: p.isim, mesaj: mesaj });
-        }
-    });
-
-    socket.on('adminKomut', (komutMetni) => {
-        let p = aktifOyuncular[socket.id];
-        if (!p) return;
-
-        let parcalar = komutMetni.split(' ');
-        let komut = parcalar[0].toLowerCase();
-        let parametre = parseInt(parcalar[1]) || 10;
-
-        if (komut === 'god') {
-            p.godMode = true;
-            socket.emit('chatMesajiGelsin', { isim: 'YÖNETİCİ', mesaj: `⚡ Ölümsüzlük ${parametre} saniye aktif!` });
-            setTimeout(() => { p.godMode = false; }, parametre * 1000);
-        } else if (komut === 'speed') {
-            p.ozelHiz = parametre;
-            socket.emit('chatMesajiGelsin', { isim: 'YÖNETİCİ', mesaj: `⚡ Hızın ${parametre} yapıldı!` });
-        } else if (komut === 'invisibility') {
-            p.gorunmez = true;
-            socket.emit('chatMesajiGelsin', { isim: 'YÖNETİCİ', mesaj: `👻 Görünmezlik ${parametre} saniye aktif!` });
-            setTimeout(() => { p.gorunmez = false; }, parametre * 1000);
-        }
+        mermiler.push({ id: socket.id, x: p.x, y: p.y, vx: Math.cos(aci) * 12, vy: Math.sin(aci) * 12 });
     });
 
     socket.on('disconnect', () => {
@@ -790,34 +302,22 @@ setInterval(() => {
         m.x += m.vx;
         m.y += m.vy;
 
-        if (carpismaVarMi(m.x, m.y, 6)) {
+        if (carpismaVarMi(m.x, m.y, 5)) {
             mermiler.splice(i, 1);
             continue;
         }
 
         for (let id in aktifOyuncular) {
-            if (id !== m.id) {
-                let target = aktifOyuncular[id];
-                let dist = Math.hypot(target.x - m.x, target.y - m.y);
-
-                if (dist < 25) {
-                    if (!target.godMode) {
-                        target.can -= 20;
-                        if (target.can <= 0) {
-                            let katil = aktifOyuncular[m.id];
-                            if (katil) katil.skor += 1;
-
-                            io.emit('olumBildirimi', `☠️ ${katil ? katil.isim : 'Biri'}, ${target.isim} kişisini avladı!`);
-                            
-                            target.can = 100;
-                            let sp = rastgeleSpawnBul();
-                            target.x = sp.x;
-                            target.y = sp.y;
-                        }
-                    }
-                    mermiler.splice(i, 1);
-                    break;
-                }
+            if (id !== m.id && Math.hypot(aktifOyuncular[id].x - m.x, aktifOyuncular[id].y - m.y) < 20) {
+                let katil = aktifOyuncular[m.id];
+                if (katil) katil.skor += 5;
+                
+                let sp = rastgeleSpawnBul();
+                aktifOyuncular[id].x = sp.x;
+                aktifOyuncular[id].y = sp.y;
+                
+                mermiler.splice(i, 1);
+                break;
             }
         }
     }
@@ -827,10 +327,9 @@ setInterval(() => {
         bullets: mermiler,
         walls: DUVARLAR,
         chests: chestler,
-        bolgeler: BOLGELER,
-        kalanSure: kalanMacSuresi
+        bolgeler: BOLGELER
     });
-}, 1000 / 60);
+}, 1000 / 30);
 
 if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
     server.listen(PORT, () => console.log(`🚀 Sunucu ${PORT} portunda çalışıyor.`));
