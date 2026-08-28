@@ -24,19 +24,119 @@ app.use('/karakterler', express.static(path.join(__dirname, 'karakterler')));
 // VERCEL ÇÖKMESİNİ ENGELLEYEN VERİTABANI BAĞLANTISI
 let db;
 if (process.env.DB_HOST) {
-    db = mysql.createConnection({ 
-        host: process.env.DB_HOST, 
-        port: process.env.DB_PORT || 3306, 
-        user: process.env.DB_USER, 
-        password: process.env.DB_PASSWORD, 
-        database: process.env.DB_NAME 
-    });
-    db.connect((err) => {
-        if (err) console.log("⚠️ Veritabanı bağlantı hatası, bellek modunda devam ediliyor.");
-        else console.log("✅ Veritabanı bağlantısı başarılı.");
-    });
+    try {
+        db = mysql.createConnection({ 
+            host: process.env.DB_HOST, 
+            port: process.env.DB_PORT || 3306, 
+            user: process.env.DB_USER, 
+            password: process.env.DB_PASSWORD, 
+            database: process.env.DB_NAME 
+        });
+        db.connect((err) => {
+            if (err) console.log("⚠️ Veritabanı bağlantı hatası, bellek modunda devam ediliyor.");
+            else console.log("✅ Veritabanı bağlantısı başarılı.");
+        });
+    } catch(e) {
+        console.log("⚠️ Veritabanı bağlantısı atlandı.");
+    }
 } else {
     console.log("ℹ️ Vercel / Bellek İçi Mod Aktif.");
+}
+
+// 100% HATASIZ VE DÜZENLENMİŞ FEN BİLİMLERİ CHEST SORULARI
+const FEN_SORULARI = [
+    { soru: "Güneş'e en yakın olan gezegen hangisidir?", secenekler: ["Merkür", "Venüs", "Dünya", "Mars"], cevap: 0 },
+    { soru: "Halkasıyla bilinen en büyük gaz devi gezegen hangisidir?", secenekler: ["Jüpiter", "Satürn", "Uranüs", "Neptün"], cevap: 1 },
+    { soru: "Güneş sisteminin en sıcak gezegeni hangisidir?", secenekler: ["Merkür", "Venüs", "Mars", "Jüpiter"], cevap: 1 },
+    { soru: "Üzerinde sıvı su bulunduran ve yaşam olan tek gezegen hangisidir?", secenekler: ["Mars", "Venüs", "Dünya", "Neptün"], cevap: 2 },
+    { soru: "Kızıl Gezegen olarak bilinen gezegen hangisidir?", secenekler: ["Jüpiter", "Mars", "Satürn", "Merkür"], cevap: 1 },
+    { soru: "Güneş sisteminin en büyük gezegeni hangisidir?", secenekler: ["Satürn", "Jüpiter", "Uranüs", "Neptün"], cevap: 1 },
+    { soru: "Güneş'e en uzak olan gezegen hangisidir?", secenekler: ["Uranüs", "Neptün", "Satürn", "Jüpiter"], cevap: 1 },
+    { soru: "Güneş tutulmasında hangi gök cismi ortadadır?", secenekler: ["Dünya", "Güneş", "Ay", "Mars"], cevap: 2 },
+    { soru: "Ay tutulmasında hangi gök cismi ortadadır?", secenekler: ["Ay", "Dünya", "Güneş", "Venüs"], cevap: 1 },
+    { soru: "Güneş tutulması olayı Ay'ın hangi evresinde gerçekleşir?", secenekler: ["Yeni Ay", "Dolunay", "İlk Dördün", "Son Dördün"], cevap: 0 },
+    { soru: "Dünya'nın tek doğal uydusu hangisidir?", secenekler: ["Güneş", "Ay", "Mars", "Titan"], cevap: 1 },
+    { soru: "Işık yılı hangi fiziksel niceliğin ölçüm birimidir?", secenekler: ["Zaman", "Mesafe", "Kütle", "Hız"], cevap: 1 },
+    { soru: "Canlıların canlılık özelliği gösteren en küçük yapı birimi nedir?", secenekler: ["Doku", "Organ", "Hücre", "Sistem"], cevap: 2 },
+    { soru: "Hücrenin yönetim ve kalıtım merkezi neresidir?", secenekler: ["Sitoplazma", "Çekirdek", "Hücre Zarı", "Mitokondri"], cevap: 1 },
+    { soru: "Hücrede hücresel solunum ile enerji üreten organel hangisidir?", secenekler: ["Ribozom", "Mitokondri", "Lizozom", "Golgi Cisimciği"], cevap: 1 }
+];
+
+const HARITA_GENISLIK = 2000;
+const HARITA_YUKSEKLIK = 1500;
+
+const BOLGELER = [
+    { isim: "TURUNCU BÖLGE", x: 0, y: 0, w: 1000, h: 750, renk: "rgba(255, 140, 0, 0.08)", yaziRengi: "#ff8c00" },
+    { isim: "SİYAH BÖLGE", x: 1000, y: 0, w: 1000, h: 750, renk: "rgba(30, 30, 30, 0.15)", yaziRengi: "#aaaaaa" },
+    { isim: "MAVİ BÖLGE", x: 0, y: 750, w: 1000, h: 750, renk: "rgba(0, 150, 255, 0.08)", yaziRengi: "#0096ff" },
+    { isim: "YEŞİL BÖLGE", x: 1000, y: 750, w: 1000, h: 750, renk: "rgba(0, 255, 100, 0.08)", yaziRengi: "#00ff64" }
+];
+
+const DUVARLAR = [
+    { x: 0, y: 0, w: 2000, h: 40 },
+    { x: 0, y: 1460, w: 2000, h: 40 },
+    { x: 0, y: 0, w: 40, h: 1500 },
+    { x: 1960, y: 0, w: 40, h: 1500 },
+    { x: 300, y: 300, w: 150, h: 150 },
+    { x: 1550, y: 300, w: 150, h: 150 },
+    { x: 300, y: 1050, w: 150, h: 150 },
+    { x: 1550, y: 1050, w: 150, h: 150 },
+    { x: 600, y: 650, w: 80, h: 200 },
+    { x: 1320, y: 650, w: 80, h: 200 }
+];
+
+let chestler = [
+    { id: 1, x: 500, y: 200, aktif: true },
+    { id: 2, x: 1500, y: 200, aktif: true },
+    { id: 3, x: 1000, y: 400, aktif: true },
+    { id: 4, x: 500, y: 1300, aktif: true },
+    { id: 5, x: 1500, y: 1300, aktif: true }
+];
+
+let aktifOyuncular = {};
+let mermiler = [];
+let kalanMacSuresi = 300; 
+
+const NEON_RENKLER = ['#00ffcc', '#ff00ff', '#00ffff', '#ff5050', '#ffff00', '#ff9900', '#9900ff', '#00ff66'];
+
+setInterval(() => {
+    if (kalanMacSuresi > 0) {
+        kalanMacSuresi--;
+    } else {
+        kalanMacSuresi = 300;
+        for(let id in aktifOyuncular) {
+            aktifOyuncular[id].skor = 0;
+            aktifOyuncular[id].can = 100;
+            let sp = rastgeleSpawnBul();
+            aktifOyuncular[id].x = sp.x;
+            aktifOyuncular[id].y = sp.y;
+        }
+        io.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '🏁 Maç süresi bitti! Skorlar sıfırlandı, yeni maç başladı!' });
+    }
+}, 1000);
+
+function carpismaVarMi(x, y, yaricap) {
+    for (let d of DUVARLAR) {
+        let closestX = Math.max(d.x, Math.min(x, d.x + d.w));
+        let closestY = Math.max(d.y, Math.min(y, d.y + d.h));
+        let distX = x - closestX;
+        let distY = y - closestY;
+        if (Math.sqrt((distX * distX) + (distY * distY)) < yaricap) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function rastgeleSpawnBul() {
+    for (let i = 0; i < 50; i++) {
+        let rx = Math.floor(Math.random() * (HARITA_GENISLIK - 200)) + 100;
+        let ry = Math.floor(Math.random() * (HARITA_YUKSEKLIK - 200)) + 100;
+        if (!carpismaVarMi(rx, ry, 30)) {
+            return { x: rx, y: ry };
+        }
+    }
+    return { x: 1000, y: 750 };
 }
 
 const layout = (content, title = "BİLGİ ÜSSÜ - BRAWL ARENA") => `
@@ -154,96 +254,6 @@ app.get('/karakter-sec', (req, res) => {
         </body></html>
     `);
 });
-
-const FEN_SORULARI = [
-    { soru: "Güneş'e en yakın olan gezegen hangisidir?", secenekler: ["Merkür", "Venüs", "Dünya", "Mars"], cevap: 0 },
-    { soru: "Halkasıyla bilinen en büyük gaz devi gezegen hangisidir?", secenekler: ["Jüpiter", "Satürn", "Uranüs", "Neptün"], cevap: 1 },
-    { soru: "Güneş sisteminin en sıcak gezegeni hangisidir?", secenekler: ["Merkür", "Venüs", "Mars", "Jüpiter"], cevap: 1 },
-    { soru: "Üzerinde sıvı su bulunduran ve yaşam olan tek gezegen hangisidir?", secenekler: ["Mars", "Venüs", "Dünya", "Neptün"], cevap: 2 },
-    { soru: "Kızıl Gezegen olarak bilinen gezegen hangisidir?", secenekler: ["Jüpiter", "Mars", "Satürn", "Merkür"], cevap: 1 },
-    { soru: "Güneş sisteminin en büyük gezegeni hangisidir?", secenekler: ["Satürn", "Jüpiter", "Uranüs", "Neptün"], cevap: 1 },
-    { soru: "Güneş'e en uzak olan gezegen hangisidir?", secenekler: ["Uranüs", "Neptün", "Satürn", "Jüpiter"], cevap: 1 },
-    { soru: "Güneş tutulmasında hangi gök cismi ortadadır?", secenekler: ["Dünya", "Güneş", "Ay", "Mars"], cevap: 2 },
-    { soru: "Ay tutulmasında hangi gök cismi ortadadır?", secenekler: ["Ay", "Dünya", "Güneş", "Venüs"], cevap: 1 },
-    { soru: "Güneş tutulması olayı ayın hangi evresinde gerçekleşir?", secenekler: ["Yeni Ay", "Dolunay", "İlk Dördün", "Son Dördün"], cevap: 0 }
-];
-
-const HARITA_GENISLIK = 2000;
-const HARITA_YUKSEKLIK = 1500;
-
-const BOLGELER = [
-    { isim: "TURUNCU BÖLGE", x: 0, y: 0, w: 1000, h: 750, renk: "rgba(255, 140, 0, 0.08)", yaziRengi: "#ff8c00" },
-    { isim: "SİYAH BÖLGE", x: 1000, y: 0, w: 1000, h: 750, renk: "rgba(30, 30, 30, 0.15)", yaziRengi: "#aaaaaa" },
-    { isim: "MAVİ BÖLGE", x: 0, y: 750, w: 1000, h: 750, renk: "rgba(0, 150, 255, 0.08)", yaziRengi: "#0096ff" },
-    { isim: "YEŞİL BÖLGE", x: 1000, y: 750, w: 1000, h: 750, renk: "rgba(0, 255, 100, 0.08)", yaziRengi: "#00ff64" }
-];
-
-const DUVARLAR = [
-    { x: 0, y: 0, w: 2000, h: 40 },
-    { x: 0, y: 1460, w: 2000, h: 40 },
-    { x: 0, y: 0, w: 40, h: 1500 },
-    { x: 1960, y: 0, w: 40, h: 1500 },
-    { x: 300, y: 300, w: 150, h: 150 },
-    { x: 1550, y: 300, w: 150, h: 150 },
-    { x: 300, y: 1050, w: 150, h: 150 },
-    { x: 1550, y: 1050, w: 150, h: 150 },
-    { x: 600, y: 650, w: 80, h: 200 },
-    { x: 1320, y: 650, w: 80, h: 200 }
-];
-
-let chestler = [
-    { id: 1, x: 500, y: 200, aktif: true },
-    { id: 2, x: 1500, y: 200, aktif: true },
-    { id: 3, x: 1000, y: 400, aktif: true },
-    { id: 4, x: 500, y: 1300, aktif: true },
-    { id: 5, x: 1500, y: 1300, aktif: true }
-];
-
-let aktifOyuncular = {};
-let mermiler = [];
-let kalanMacSuresi = 300; 
-
-setInterval(() => {
-    if (kalanMacSuresi > 0) {
-        kalanMacSuresi--;
-    } else {
-        kalanMacSuresi = 300;
-        for(let id in aktifOyuncular) {
-            aktifOyuncular[id].skor = 0;
-            aktifOyuncular[id].can = 100;
-            let sp = rastgeleSpawnBul();
-            aktifOyuncular[id].x = sp.x;
-            aktifOyuncular[id].y = sp.y;
-        }
-        io.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '🏁 Maç süresi bitti! Skorlar sıfırlandı, yeni maç başladı!' });
-    }
-}, 1000);
-
-function carpismaVarMi(x, y, yaricap) {
-    for (let d of DUVARLAR) {
-        let closestX = Math.max(d.x, Math.min(x, d.x + d.w));
-        let closestY = Math.max(d.y, Math.min(y, d.y + d.h));
-        let distX = x - closestX;
-        let distY = y - closestY;
-        if (Math.sqrt((distX * distX) + (distY * distY)) < yaricap) {
-            return true;
-        }
-    }
-    return false;
-}
-
-function rastgeleSpawnBul() {
-    for (let i = 0; i < 50; i++) {
-        let rx = Math.floor(Math.random() * (HARITA_GENISLIK - 200)) + 100;
-        let ry = Math.floor(Math.random() * (HARITA_YUKSEKLIK - 200)) + 100;
-        if (!carpismaVarMi(rx, ry, 30)) {
-            return { x: rx, y: ry };
-        }
-    }
-    return { x: 1000, y: 750 };
-}
-
-const NEON_RENKLER = ['#00ffcc', '#ff00ff', '#00ffff', '#ff5050', '#ffff00', '#ff9900', '#9900ff', '#00ff66'];
 
 app.get('/oyun-alani', (req, res) => {
     res.send(`
@@ -822,9 +832,8 @@ setInterval(() => {
     });
 }, 1000 / 60);
 
-// Vercel Serverless Desteği
-if (process.env.NODE_ENV !== 'production') {
-    server.listen(PORT, () => console.log(`🚀 Sunucu ${PORT} portunda başarıyla çalışıyor.`));
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+    server.listen(PORT, () => console.log(`🚀 Sunucu ${PORT} portunda çalışıyor.`));
 }
 
 module.exports = app;
