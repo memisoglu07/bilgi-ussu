@@ -1,7 +1,6 @@
 {
   "name": "bilgi-ussu",
   "version": "1.0.0",
-  "description": "Fen Bilimleri Chest Arena Oyunu",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
