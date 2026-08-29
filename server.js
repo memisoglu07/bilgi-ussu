@@ -27,7 +27,7 @@ const db = mysql.createConnection({
     database: process.env.DB_NAME || 'bilgi_ussu_proje' 
 });
 
-const layout = (content, title = "BİLGİ ÜSSÜ - BRAWL ARENA") => `
+const layout = (content, title = "Bilgi Üssü") => `
     <!DOCTYPE html><html><head><title>${title}</title><style>
         body { background:#0a0a0a; color:#FFD700; font-family: 'Segoe UI', sans-serif; margin:0; min-height:100vh; display:flex; justify-content:center; align-items:center; }
         .box { background:linear-gradient(145deg, #1e1e1e, #000); padding:40px; border-radius:20px; border:2px solid #FFD700; width:500px; text-align:center; box-shadow:0 0 40px rgba(255,215,0,0.2); }
@@ -328,14 +328,14 @@ app.get('/oyun-alani', (req, res) => {
             <div id="muzikPaneli">
                 <span id="sesIkona" style="cursor:pointer; font-size:18px;" onclick="toggleMuzik()" title="Sesi Aç/Kapat">🔊</span>
                 <button onclick="oynat('pixel-drift.mp3')">Pixel Drift</button>
-                <button onclick="oynat('asphalt-menace.mp3')">Asphalt Menace</button>
+                <button onclick="play('asphalt-menace.mp3')">Asphalt Menace</button>
                 <button onclick="oynat('cybernetic-assault.mp3')">Cybernetic Assault</button>
             </div>
 
             <div id="adminSifreModal">
-                <h3>🔒 YÖNETİCİ ŞİFRESİ GEREKLİ</h3>
-                <p style="font-size:12px; color:#aaa;">Hile konsolunu açmak için şifreyi gir:</p>
-                <input type="password" id="sifreInput" placeholder="Şifre" autocomplete="off">
+                <h3>Bakımda</h3>
+                <p style="font-size:12px; color:#aaa;">Bu yerde oyunun geliştiricisine özel mesaj gönderilmesi planlanıyor.:</p>
+                <input type="password" id="sifreInput" placeholder="Geliştiriciye Mesaj Gönder" autocomplete="off">
                 <button class="secenekBtn" onclick="sifreyiKontrolEt()" style="background:#ff8c00; color:#000; font-weight:bold;">Giriş Yap</button>
             </div>
 
