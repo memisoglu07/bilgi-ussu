@@ -738,9 +738,9 @@ io.on('connection', (socket) => {
         if (!p) return;
 
         if (data.secilenIndex === data.dogruCevap) {
-            p.skor += 15;
-            p.can = Math.min(100, p.can + 25);
-            socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '🎉 Doğru Cevap! +15 Puan ve Can Kazandın.' });
+            p.skor += 10;
+            p.can = Math.min(100, p.can + 100);
+            socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '🎉 Doğru Cevap! +10 Puan ve Can Kazandın.' });
         } else {
             socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '❌ Yanlış Cevap!' });
         }
@@ -814,9 +814,9 @@ setInterval(() => {
                     if (!hedef.godMode) {
                         hedef.can -= 15;
                         if (hedef.can <= 0) {
-                            io.emit('olumBildirimi', `💀 ${hedef.isim}, ${m.sahipIsim} tarafından avlandı!`);
+                            io.emit('olumBildirimi', `☠️ ${hedef.isim}, ${m.sahipIsim} tarafından katledildi!☠️`);
                             if (aktifOyuncular[m.sahipId]) {
-                                aktifOyuncular[m.sahipId].skor += 25;
+                                aktifOyuncular[m.sahipId].skor += 1;
                             }
                             let sp = rastgeleSpawnBul();
                             hedef.x = sp.x;
