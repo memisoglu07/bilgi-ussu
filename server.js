@@ -170,10 +170,10 @@ const HARITA_GENISLIK = 2000;
 const HARITA_YUKSEKLIK = 1500;
 
 const BOLGELER = [
-    { isim: "TURUNCU BÖLGE", x: 0, y: 0, w: 1000, h: 750, renk: "rgba(255, 140, 0, 0.05)", yaziRengi: "rgba(255, 140, 0, 0.2)" },
-    { isim: "SİYAH BÖLGE", x: 1000, y: 0, w: 1000, h: 750, renk: "rgba(30, 30, 30, 0.1)", yaziRengi: "rgba(170, 170, 170, 0.2)" },
-    { isim: "MAVİ BÖLGE", x: 0, y: 750, w: 1000, h: 750, renk: "rgba(0, 150, 255, 0.05)", yaziRengi: "rgba(0, 150, 255, 0.2)" },
-    { isim: "YEŞİL BÖLGE", x: 1000, y: 750, w: 1000, h: 750, renk: "rgba(0, 255, 100, 0.05)", yaziRengi: "rgba(0, 255, 100, 0.2)" }
+    { isim: "MAVİ BÖLGE", x: 0, y: 0, w: 1000, h: 750, renk: "rgba(0, 100, 200, 0.03)", yaziRengi: "rgba(0, 120, 255, 0.12)" },
+    { isim: "SARI BÖLGE", x: 1000, y: 0, w: 1000, h: 750, renk: "rgba(200, 180, 0, 0.03)", yaziRengi: "rgba(255, 215, 0, 0.12)" },
+    { isim: "SİYAH BÖLGE", x: 0, y: 750, w: 1000, h: 750, renk: "rgba(20, 20, 20, 0.06)", yaziRengi: "rgba(150, 150, 150, 0.12)" },
+    { isim: "YEŞİL BÖLGE", x: 1000, y: 750, w: 1000, h: 750, renk: "rgba(0, 180, 80, 0.03)", yaziRengi: "rgba(0, 255, 100, 0.12)" }
 ];
 
 const DUVARLAR = [
@@ -231,7 +231,6 @@ function carpismaVarMi(x, y, yaricap) {
 }
 
 function rastgeleSpawnBul() {
-    // Güvenli açık alanlar (Duvarların olmadığı merkezî koridorlar)
     const guvenliNoktalar = [
         { x: 1000, y: 200 }, { x: 1000, y: 1300 },
         { x: 200, y: 750 }, { x: 1800, y: 750 },
@@ -354,7 +353,6 @@ setInterval(() => {
 
         let sekmeOldu = false;
 
-        // Harita kenarlarından sekme
         if (m.x <= 40 || m.x >= HARITA_GENISLIK - 40) {
             m.dx = -m.dx;
             sekmeOldu = true;
@@ -364,11 +362,9 @@ setInterval(() => {
             sekmeOldu = true;
         }
 
-        // İç duvarlardan sekme
         if (!sekmeOldu) {
             for (let d of DUVARLAR) {
                 if (m.x >= d.x && m.x <= d.x + d.w && m.y >= d.y && m.y <= d.y + d.h) {
-                    // Çarpışma yönüne göre ters çevir
                     let carpmaX = Math.abs(m.x - d.x) < 10 || Math.abs(m.x - (d.x + d.w)) < 10;
                     let carpmaY = Math.abs(m.y - d.y) < 10 || Math.abs(m.y - (d.y + d.h)) < 10;
                     
@@ -514,7 +510,6 @@ app.get('/oyun-alani', (req, res) => {
             
             <script src="/socket.io/socket.io.js"></script>
             <script>
-                // Müzik Başlatma ve Yönetimi (Autoplay politikalarına uygun)
                 let muzik = window.muzik || new Audio(sessionStorage.getItem('muzikSrc') || '/muzik/pixel-drift.mp3');
                 window.muzik = muzik;
                 muzik.loop = true;
@@ -768,31 +763,32 @@ app.get('/oyun-alani', (req, res) => {
                     ctx.save();
                     ctx.translate(-kameraX, -kameraY);
 
-                    // Bölgeleri çiz
+                    // Şık ve sadeleştirilmiş bölgeler
                     let bolgeler = oyunVerisi.bolgeler || ${JSON.stringify(BOLGELER)};
                     bolgeler.forEach(b => {
                         ctx.fillStyle = b.renk;
                         ctx.fillRect(b.x, b.y, b.w, b.h);
-                        ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+                        ctx.lineWidth = 2;
                         ctx.strokeRect(b.x, b.y, b.w, b.h);
                         ctx.fillStyle = b.yaziRengi;
-                        ctx.font = 'bold 36px monospace';
-                        ctx.fillText(b.isim, b.x + 60, b.y + 80);
+                        ctx.font = 'bold 32px sans-serif';
+                        ctx.fillText(b.isim, b.x + 50, b.y + 70);
                     });
 
                     // Duvarları çiz
                     let walls = oyunVerisi.walls || ${JSON.stringify(DUVARLAR)};
-                    ctx.fillStyle = '#333';
+                    ctx.fillStyle = '#2a2a2a';
                     walls.forEach(d => {
                         ctx.fillRect(d.x, d.y, d.w, d.h);
-                        ctx.strokeStyle = '#555';
+                        ctx.strokeStyle = '#444';
                         ctx.strokeRect(d.x, d.y, d.w, d.h);
                     });
 
                     // Chest'leri çiz
                     let chests = oyunVerisi.chests || ${JSON.stringify(chestler)};
                     chests.forEach(c => {
-                        if (c.aktif) {
+                        if (c.aktif && chestImg.complete) {
                             ctx.drawImage(chestImg, c.x - 20, c.y - 20, 40, 40);
                         }
                     });
@@ -806,13 +802,20 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.fill();
                     });
 
-                    // Oyuncuları çiz
+                    // Oyuncuları ve Avatarları Çiz
                     let players = oyunVerisi.players || {};
                     for (let id in players) {
                         let p = players[id];
                         ctx.save();
                         ctx.translate(p.x, p.y);
 
+                        // Dış Çerçeve ve Arka plan
+                        ctx.fillStyle = '#1e1e1e';
+                        ctx.beginPath();
+                        ctx.arc(0, 0, 22, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        // Oyuncu Görseli / Avatarı
                         if (p.avatar && p.avatar.startsWith('data:image')) {
                             if (!loadedImages[id]) {
                                 let img = new Image();
@@ -822,9 +825,9 @@ app.get('/oyun-alani', (req, res) => {
                             if (loadedImages[id].complete) {
                                 ctx.save();
                                 ctx.beginPath();
-                                ctx.arc(0, 0, 22, 0, Math.PI * 2);
+                                ctx.arc(0, 0, 20, 0, Math.PI * 2);
                                 ctx.clip();
-                                ctx.drawImage(loadedImages[id], -22, -22, 44, 44);
+                                ctx.drawImage(loadedImages[id], -20, -20, 40, 40);
                                 ctx.restore();
                             }
                         } else {
@@ -834,21 +837,24 @@ app.get('/oyun-alani', (req, res) => {
                             ctx.fill();
                         }
 
+                        // Altın Çerçeve
                         ctx.strokeStyle = '#FFD700';
                         ctx.lineWidth = 3;
                         ctx.beginPath();
                         ctx.arc(0, 0, 22, 0, Math.PI * 2);
                         ctx.stroke();
 
+                        // Can Barı
                         ctx.fillStyle = 'red';
-                        ctx.fillRect(-25, -35, 50, 6);
+                        ctx.fillRect(-25, -34, 50, 5);
                         ctx.fillStyle = 'lime';
-                        ctx.fillRect(-25, -35, (p.can / 100) * 50, 6);
+                        ctx.fillRect(-25, -34, (p.can / 100) * 50, 5);
 
+                        // İsim Etiketi
                         ctx.fillStyle = '#fff';
                         ctx.font = 'bold 12px sans-serif';
                         ctx.textAlign = 'center';
-                        ctx.fillText(p.isim, 0, -45);
+                        ctx.fillText(p.isim, 0, -44);
 
                         ctx.restore();
                     }
