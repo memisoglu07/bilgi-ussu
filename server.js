@@ -583,24 +583,20 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.strokeRect(d.x, d.y, d.w, d.h);
                     }
 
-                    // Sandıkları Çiz (%100 Güvenli Canvas Çizimi - Görsel Bağımlılığı Yok)
+                    // Sandıkları Çiz (Canvas ile Altın Kutu)
                     for (let c of oyunVerisi.chests) {
                         if (!c.aktif) continue;
                         
-                        // Ana Sandık Gövdesi (Altın Rengi)
                         ctx.fillStyle = '#FFD700';
                         ctx.fillRect(c.x - 18, c.y - 18, 36, 36);
                         
-                        // Dış Çerçeve
                         ctx.strokeStyle = '#000000';
                         ctx.lineWidth = 3;
                         ctx.strokeRect(c.x - 18, c.y - 18, 36, 36);
 
-                        // Sandık Kapak Çizgisi ve Kilit
                         ctx.fillStyle = '#B8860B';
                         ctx.fillRect(c.x - 18, c.y - 4, 36, 8);
                         
-                        // Kilit Yuvası
                         ctx.fillStyle = '#000000';
                         ctx.fillRect(c.x - 4, c.y - 4, 8, 8);
                         ctx.fillStyle = '#FFFFFF';
@@ -617,13 +613,15 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.stroke();
                     }
 
-                    // Oyuncuları Çiz
+                    // Oyuncuları Çiz (%100 Güvenli Çökme Önleyici Yapı)
                     for (let id in oyunVerisi.players) {
                         let p = oyunVerisi.players[id];
                         if (p.gizli && id !== benimId) continue;
 
                         ctx.save();
                         ctx.translate(p.x, p.y);
+
+                        let resimCizildi = false;
 
                         if (p.avatar && p.avatar.length > 50) {
                             if (!loadedImages[id]) {
@@ -633,48 +631,50 @@ app.get('/oyun-alani', (req, res) => {
                             }
                             
                             let imgObj = loadedImages[id];
+                            
+                            // Sadece resim TAM YÜKLENDİYSE ve BOZUK DEĞİLSE çiz
                             if (imgObj && imgObj.complete && imgObj.naturalWidth > 0) {
-                                ctx.save();
-                                ctx.beginPath();
-                                ctx.arc(0, 0, 20, 0, Math.PI * 2);
-                                ctx.clip();
                                 try {
-                                    ctx.drawImage(imgObj, -20, -20, 40, 40);
-                                } catch (e) {
-                                    ctx.fillStyle = p.renk || '#00ffcc';
+                                    ctx.save();
                                     ctx.beginPath();
                                     ctx.arc(0, 0, 20, 0, Math.PI * 2);
-                                    ctx.fill();
+                                    ctx.clip();
+                                    ctx.drawImage(imgObj, -20, -20, 40, 40);
+                                    ctx.restore();
+                                    resimCizildi = true;
+                                } catch (e) {
+                                    resimCizildi = false;
                                 }
-                                ctx.restore();
-                            } else {
-                                ctx.fillStyle = p.renk || '#00ffcc';
-                                ctx.beginPath();
-                                ctx.arc(0, 0, 20, 0, Math.PI * 2);
-                                ctx.fill();
                             }
-                        } else {
+                        }
+
+                        // Resim yoksa veya yüklenirken bozulduysa varsayılan renkli daire çiz
+                        if (!resimCizildi) {
                             ctx.fillStyle = p.renk || '#00ffcc';
                             ctx.beginPath();
                             ctx.arc(0, 0, 20, 0, Math.PI * 2);
                             ctx.fill();
                         }
 
+                        // Dış Çerçeve (Kalkan)
                         ctx.strokeStyle = p.godMode ? '#00ffff' : '#FFD700';
                         ctx.lineWidth = 3;
                         ctx.beginPath();
                         ctx.arc(0, 0, 20, 0, Math.PI * 2);
                         ctx.stroke();
 
+                        // Can Barı
                         ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
                         ctx.fillRect(-20, -32, 40, 5);
                         ctx.fillStyle = '#00ff64';
                         ctx.fillRect(-20, -32, (Math.max(0, p.can) / 100) * 40, 5);
 
+                        // Oyuncu İsmi
+                        let gosterilecekIsim = p.isim || 'Savaşçı';
                         ctx.fillStyle = '#fff';
                         ctx.font = 'bold 12px Segoe UI';
                         ctx.textAlign = 'center';
-                        ctx.fillText(p.isim, 0, -38);
+                        ctx.fillText(gosterilecekIsim, 0, -38);
 
                         ctx.restore();
                     }
