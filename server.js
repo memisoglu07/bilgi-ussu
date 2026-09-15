@@ -609,7 +609,7 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.stroke();
                     }
 
-                    // Oyuncuları Çiz
+                    // Oyuncuları Çiz (Güvenli Avatar Kontrolü ile)
                     for (let id in oyunVerisi.players) {
                         let p = oyunVerisi.players[id];
                         if (p.gizli && id !== benimId) continue;
@@ -619,15 +619,25 @@ app.get('/oyun-alani', (req, res) => {
 
                         if (p.avatar) {
                             if (!loadedImages[id]) {
-                                loadedImages[id] = new Image();
-                                loadedImages[id].src = p.avatar;
+                                let img = new Image();
+                                img.src = p.avatar;
+                                loadedImages[id] = img;
                             }
-                            ctx.save();
-                            ctx.beginPath();
-                            ctx.arc(0, 0, 20, 0, Math.PI * 2);
-                            ctx.clip();
-                            ctx.drawImage(loadedImages[id], -20, -20, 40, 40);
-                            ctx.restore();
+                            
+                            let imgObj = loadedImages[id];
+                            if (imgObj.complete && imgObj.naturalWidth !== 0) {
+                                ctx.save();
+                                ctx.beginPath();
+                                ctx.arc(0, 0, 20, 0, Math.PI * 2);
+                                ctx.clip();
+                                ctx.drawImage(imgObj, -20, -20, 40, 40);
+                                ctx.restore();
+                            } else {
+                                ctx.fillStyle = p.renk || '#00ffcc';
+                                ctx.beginPath();
+                                ctx.arc(0, 0, 20, 0, Math.PI * 2);
+                                ctx.fill();
+                            }
                         } else {
                             ctx.fillStyle = p.renk || '#00ffcc';
                             ctx.beginPath();
