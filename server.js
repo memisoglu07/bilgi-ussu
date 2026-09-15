@@ -15,7 +15,6 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 app.use(bodyParser.json({ limit: '10mb' }));
 
 app.use('/muzik', express.static(path.join(__dirname, 'ses/muzik')));
-app.use('/karakterler', express.static(path.join(__dirname, '../oyun_projem/karakterler')));
 
 const db = mysql.createConnection({ 
     host: process.env.DB_HOST || '127.0.0.1', 
@@ -357,12 +356,6 @@ app.get('/oyun-alani', (req, res) => {
 
                 let oyunVerisi = { players: {}, bullets: [], walls: ${JSON.stringify(DUVARLAR)}, chests: ${JSON.stringify(chestler)}, bolgeler: ${JSON.stringify(BOLGELER)}, kalanSure: 300 };
                 let loadedImages = {};
-                
-                let chestImg = new Image();
-                let chestHatali = false;
-                chestImg.onload = function() { chestHatali = false; };
-                chestImg.onerror = function() { chestHatali = true; };
-                chestImg.src = '/karakterler/Chest.webp';
 
                 let tuslar = {};
                 let chatAcik = false;
@@ -590,22 +583,28 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.strokeRect(d.x, d.y, d.w, d.h);
                     }
 
-                    // Sandıkları Çiz (Hata Geçirmez Güvenli Çizim)
+                    // Sandıkları Çiz (%100 Güvenli Canvas Çizimi - Görsel Bağımlılığı Yok)
                     for (let c of oyunVerisi.chests) {
                         if (!c.aktif) continue;
-                        if (!chestHatali && chestImg && chestImg.complete && chestImg.naturalWidth > 0) {
-                            try {
-                                ctx.drawImage(chestImg, c.x - 20, c.y - 20, 40, 40);
-                            } catch (e) {
-                                chestHatali = true;
-                            }
-                        } else {
-                            ctx.fillStyle = '#FFD700';
-                            ctx.fillRect(c.x - 15, c.y - 15, 30, 30);
-                            ctx.strokeStyle = '#000';
-                            ctx.lineWidth = 2;
-                            ctx.strokeRect(c.x - 15, c.y - 15, 30, 30);
-                        }
+                        
+                        // Ana Sandık Gövdesi (Altın Rengi)
+                        ctx.fillStyle = '#FFD700';
+                        ctx.fillRect(c.x - 18, c.y - 18, 36, 36);
+                        
+                        // Dış Çerçeve
+                        ctx.strokeStyle = '#000000';
+                        ctx.lineWidth = 3;
+                        ctx.strokeRect(c.x - 18, c.y - 18, 36, 36);
+
+                        // Sandık Kapak Çizgisi ve Kilit
+                        ctx.fillStyle = '#B8860B';
+                        ctx.fillRect(c.x - 18, c.y - 4, 36, 8);
+                        
+                        // Kilit Yuvası
+                        ctx.fillStyle = '#000000';
+                        ctx.fillRect(c.x - 4, c.y - 4, 8, 8);
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.fillRect(c.x - 2, c.y - 2, 4, 4);
                     }
 
                     // Mermileri Çiz
