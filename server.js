@@ -9,6 +9,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// Bulut sunucuların atayacağı dinamik portu yakala (Render/Railway uyumlu)
 const PORT = process.env.PORT || 3000;
 
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
@@ -17,6 +18,7 @@ app.use(bodyParser.json({ limit: '10mb' }));
 app.use('/muzik', express.static(path.join(__dirname, 'ses/muzik')));
 app.use('/karakterler', express.static(path.join(__dirname, '../oyun_projem/karakterler')));
 
+// Veritabanı Bağlantısı (Render/Bulut Uyumlu)
 const db = mysql.createConnection({ 
     host: process.env.DB_HOST || '127.0.0.1', 
     port: process.env.DB_PORT || 8889, 
@@ -146,8 +148,54 @@ const FEN_SORULARI = [
     { soru: "Halkasıyla bilinen en büyük gaz devi gezegen hangisidir?", secenekler: ["Jüpiter", "Satürn", "Uranüs", "Neptün"], cevap: 1 },
     { soru: "Güneş sisteminin en sıcak gezegeni hangisidir?", secenekler: ["Merkür", "Venüs", "Mars", "Jüpiter"], cevap: 1 },
     { soru: "Üzerinde sıvı su bulunduran ve yaşam olan tek gezegen hangisidir?", secenekler: ["Mars", "Venüs", "Dünya", "Neptün"], cevap: 2 },
-    { soru: "Kızıl Gezegen olarak bilinen gezegen hangisidir?", secenekler: ["Jüpiter", "Mars", "Satürn", "Merkür"], cevap: 1 }
+    { soru: "Kızıl Gezegen olarak bilinen gezegen hangisidir?", secenekler: ["Jüpiter", "Mars", "Satürn", "Merkür"], cevap: 1 },
+    { soru: "Güneş sisteminin en büyük gezegeni hangisidir?", secenekler: ["Satürn", "Jüpiter", "Uranüs", "Neptün"], cevap: 1 },
+    { soru: "Güneş'e en uzak olan gezegen hangisidir?", secenekler: ["Uranüs", "Neptün", "Satürn", "Jüpiter"], cevap: 1 },
+    { soru: "Güneş tutulmasında hangi gök cismi ortadadır?", secenekler: ["Dünya", "Güneş", "Ay", "Mars"], cevap: 2 },
+    { soru: "Ay tutulmasında hangi gök cismi ortadadır?", secenekler: ["Ay", "Dünya", "Güneş", "Venüs"], cevap: 1 },
+    { soru: "Güneş tutulması olayı ayın hangi evresinde gerçekleşir?", secenekler: ["Yeni Ay", "Dolunay", "İlk Dördün", "Son Dördün"], cevap: 0 },
+    { soru: "Aşağıdaki gezegenlerden hangisi iç (karasal) gezegenler arasında yer almaz?", secenekler: ["Merkür", "Venüs", "Dünya", "Jüpiter"], cevap: 3 },
+    { soru: "Ay tutulması olayı Ay'ın hangi evresinde gerçekleşir?", secenekler: ["Yeni Ay", "Dolunay", "İlk Dördün", "Son Dördün"], cevap: 1 },
+    { soru: "Güneş sistemindeki gezegenler yapılarına göre kaç gruba ayrılır?", secenekler: ["2", "3", "4", "5"], cevap: 0 },
+    { soru: "Aşağıdaki gezegenlerden hangisinin doğal uydusu yoktur?", secenekler: ["Dünya", "Mars", "Merkür", "Jüpiter"], cevap: 2 },
+    { soru: "Halk arasında 'Çoban Yıldızı' olarak bilinen gezegen hangisidir?", secenekler: ["Venüs", "Mars", "Merkür", "Satürn"], cevap: 0 },
+    { soru: "Güneş sisteminin en küçük gezegeni hangisidir?", secenekler: ["Mars", "Plüton", "Merkür", "Venüs"], cevap: 2 },
+    { soru: "Asteroit kuşağı hangi iki gezegen arasında yer alır?", secenekler: ["Dünya - Mars", "Mars - Jüpiter", "Jüpiter - Satürn", "Venüs - Dünya"], cevap: 1 },
+    { soru: "Gezegenlerin etrafında dolanan gök cisimlerine ne ad verilir?", secenekler: ["Yıldız", "Kuyruklu Yıldız", "Uydu", "Asteroit"], cevap: 2 },
+    { soru: "Yörüngesinde yan yatmış bir varil gibi dönen gezegen hangisidir?", secenekler: ["Uranüs", "Neptün", "Satürn", "Jüpiter"], cevap: 0 },
+    { soru: "Atmosfere girerek yeryüzüne ulaşabilen meteor parçalarına ne denir?", secenekler: ["Yıldız", "Gök taşı (Meteorit)", "Asteroit", "Bulutsu"], cevap: 1 },
+    { soru: "Gök taşlarının yeryüzünde oluşturduğu derin çukurlara ne ad verilir?", secenekler: ["Krater", "Gök taşı çukuru", "Kanyon", "Obruk"], cevap: 1 },
+    { soru: "Aşağıdaki gezegenlerden hangisi dış (gazsal) gezegenler sınıfındadır?", secenekler: ["Dünya", "Mars", "Venüs", "Uranüs"], cevap: 3 },
+    { soru: "Phobos ve Deimos adında iki küçük uydusu olan gezegen hangisidir?", secenekler: ["Merkür", "Venüs", "Mars", "Satürn"], cevap: 2 },
+    { soru: "Güneş sisteminin Jüpiter'den sonraki en büyük ikinci gezegeni hangisidir?", secenekler: ["Satürn", "Uranüs", "Neptün", "Dünya"], cevap: 0 },
+    { soru: "Mavi renkli göründüğü için Uranüs'ün ikizi olarak adlandırılan gezegen hangisidir?", secenekler: ["Jüpiter", "Satürn", "Neptün", "Merkür"], cevap: 2 },
+    { soru: "Halk arasında 'yıldız kayması' olarak bilinen olayın asıl sebebi nedir?", secenekler: ["Yıldızların sönmesi", "Meteorların atmosfere girip yanması", "Kuyruklu yıldızların çarpışması", "Gezegenlerin yer değiştirmesi"], cevap: 1 },
+    { soru: "Hangi gezegenin uydusu en fazladır (Son verilere göre)?", secenekler: ["Dünya", "Mars", "Satürn", "Merkür"], cevap: 2 },
+    { soru: "Aşağıdaki gezegenlerden hangisinin belirgin bir halkası yoktur?", secenekler: ["Satürn", "Jüpiter", "Uranüs", "Dünya"], cevap: 3 },
+    { soru: "Güneş tutulması ne kadar süreyle gözlemlenebilir?", secenekler: ["Birkaç dakika", "Birkaç saat", "Tüm gün", "Birkaç hafta"], cevap: 0 },
+    { soru: "Ay tutulması esnasında Dünya'nın gölgesi nerenin üzerine düşer?", secenekler: ["Güneş'in", "Ay'ın", "Mars'ın", "Venüs'ün"], cevap: 1 },
+    { soru: "Aşağıdakilerden hangisi Ay tutulmasının özelliklerinden biridir?", secenekler: ["Gündüz vakti gerçekleşir", "Çıplak gözle izlemek zararlıdır", "Gece vakti gözlemlenir", "Dünyada çok dar bir alanda görülür"], cevap: 2 },
+    { soru: "Güneş ve Ay tutulmaları her ay neden gerçekleşmez?", secenekler: ["Dünya yavaş döndüğü için", "Güneş çok büyük olduğu için", "Ay'ın dönme ekseni eğik olduğu için", "Bulutlar önünü kapattığı için"], cevap: 2 },
+    { soru: "Güneş tutulmasını izlerken aşağıdakilerden hangisini kullanmak güvenlidir?", secenekler: ["Güneş gözlüğü", "Filtreli koruyucu gözlük", "Dürbün", "Ayna"], cevap: 1 },
+    { soru: "Ay tutulması yaklaşık ne kadar süre boyunca gözlemlenebilir?", secenekler: ["Birkaç dakika", "Birkaç saat", "Birkaç saniye", "Tüm gün"], cevap: 1 },
+    { soru: "Güneş sisteminde kaç tane gezegen bulunmaktadır?", secenekler: ["7", "8", "9", "10"], cevap: 1 },
+    { soru: "Boyutları birbirine çok yakın olduğu için 'Dünya'nın İkizi' olarak adlandırılan gezegen hangisidir?", secenekler: ["Mars", "Venüs", "Merkür", "Jüpiter"], cevap: 1 },
+    { soru: "Titan adlı en büyük uydu hangi gezegene aittir?", secenekler: ["Jüpiter", "Satürn", "Uranüs", "Neptün"], cevap: 1 },
+    { soru: "Ganymede ve Callisto hangi gezegenin uydularındandır?", secenekler: ["Mars", "Satürn", "Jüpiter", "Uranüs"], cevap: 2 },
+    { soru: "Aşağıdaki gök cisimlerinden hangisi bir ısı ve ışık kaynağıdır?", secenekler: ["Ay", "Güneş", "Dünya", "Jüpiter"], cevap: 1 },
+    { soru: "Güneş'e yakınlık sıralamasında 4. sırada olan gezegen hangisidir?", secenekler: ["Dünya", "Mars", "Jüpiter", "Venüs"], cevap: 1 },
+    { soru: "Gezegenlerin Güneş etrafında takip ettikleri oval yollara ne ad verilir?", secenekler: ["Yörünge", "Kuyruk", "Eksen", "Kuşak"], cevap: 0 },
+    { soru: "Karbon dioksit gazından oluşan kalın atmosferi yüzünden aşırı sera etkisi yaşayan gezegen hangisidir?", secenekler: ["Merkür", "Venüs", "Mars", "Dünya"], cevap: 1 },
+    { soru: "Aşağıdaki gezegenlerden hangisi tamamen gazlardan oluşmuştur?", secenekler: ["Merkür", "Venüs", "Mars", "Neptün"], cevap: 3 },
+    { soru: "Güneş tutulması sırasında hangisi gerçekleşir?", secenekler: ["Ay, Güneş ışınlarının Dünya'ya ulaşmasını engeller", "Dünya, Güneş ışınlarının Ay'a ulaşmasını engeller", "Güneş, Ay'ın arkasında kalır", "Ay ortadan kaybolur"], cevap: 0 },
+    { soru: "Ay tutulması Dünya'nın hangi bölgesinde yaşayan insanlar tarafından gözlemlenebilir?", secenekler: ["Sadece kutuplarda", "Geceyi yaşayan bölgelerde", "Gündüzü yaşayan bölgelerde", "Sadece ekvatorda"], cevap: 1 },
+    { soru: "Güneş ve Ay tutulmaları temelde ne olayıdır?", secenekler: ["Birer ışık yansıması", "Birer gölge olayı", "Birer çekim dalgası", "Birer meteor yağmuru"], cevap: 1 },
+    { soru: "Güneş tutulması Dünya üzerinde nasıl bir alanda gözlemlenir?", secenekler: ["Çok geniş bir alanda", "Dar bir şerit üzerinde", "Tüm Dünya'da aynı anda", "Sadece okyanuslarda"], cevap: 1 },
+    { soru: "Aşağıdaki gezegen çiftlerinden hangisinin hiç uydusu yoktur?", secenekler: ["Dünya - Mars", "Merkür - Venüs", "Jüpiter - Satürn", "Uranüs - Neptün"], cevap: 1 },
+    { soru: "Atmosfere girip sürtünmeden dolayı yanan gök cisimlerinin uzaydaki genel adı nedir?", secenekler: ["Meteor", "Yıldız", "Gezegen", "Yapay Uydu"], cevap: 0 },
+    { soru: "Ay tutulması esnasında Güneş, Dünya ve Ay'ın doğru sıralanışı nasıldır?", secenekler: ["Dünya - Güneş - Ay", "Güneş - Ay - Dünya", "Güneş - Dünya - Ay", "Ay - Güneş - Dünya"], cevap: 2 }
 ];
+
 
 const HARITA_GENISLIK = 2000;
 const HARITA_YUKSEKLIK = 1500;
@@ -265,7 +313,7 @@ app.get('/oyun-alani', (req, res) => {
             .kill-msg { background: rgba(0, 0, 0, 0.65); border-left: 4px solid #ff4757; color: #fff; padding: 6px 12px; font-size: 13px; font-weight: bold; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
         </style></head><body>
             <div class="ui">⭐ BİLGİ ÜSSÜ FEN BİLİMLERİ ARENA ⭐</div>
-            <div class="bilgi">Hareket: <b>W,A,S,D</b> | Ateş Et: <b>Sol Tık (Mermiler 7 kez seker!)</b> | <a href="/karakter-sec" style="color:#ff4757; text-decoration:none;">Karakter Değiştir</a></div>
+            <div class="bilgi">Hareket: <b>W,A,S,D</b> | Ateş Et: <b>Sol Tık</b> | <a href="/karakter-sec" style="color:#ff4757; text-decoration:none;">Karakter Değiştir</a></div>
             
             <div id="ustPanel">
                 <div class="panelKutusu">
@@ -280,13 +328,13 @@ app.get('/oyun-alani', (req, res) => {
             <div id="muzikPaneli">
                 <span id="sesIkona" style="cursor:pointer; font-size:18px;" onclick="toggleMuzik()" title="Sesi Aç/Kapat">🔊</span>
                 <button onclick="oynat('pixel-drift.mp3')">Pixel Drift</button>
-                <button onclick="oynat('asphalt-menace.mp3')">Asphalt Menace</button>
+                
                 <button onclick="oynat('cybernetic-assault.mp3')">Cybernetic Assault</button>
             </div>
 
             <div id="adminSifreModal">
                 <h3>Bakımda</h3>
-                <p style="font-size:12px; color:#aaa;">Bu yerde oyunun geliştiricisine özel mesaj gönderilmesi planlanıyor:</p>
+                <p style="font-size:12px; color:#aaa;">Bu yerde oyunun geliştiricisine özel mesaj gönderilmesi planlanıyor.:</p>
                 <input type="password" id="sifreInput" placeholder="Geliştiriciye Mesaj Gönder" autocomplete="off">
                 <button class="secenekBtn" onclick="sifreyiKontrolEt()" style="background:#ff8c00; color:#000; font-weight:bold;">Giriş Yap</button>
             </div>
@@ -586,10 +634,10 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.strokeRect(d.x, d.y, d.w, d.h);
                     }
 
-                    // Sandıkları Çiz (Garantili Yükleme Kontrolüyle)
+                    // Sandıkları Çiz
                     for (let c of oyunVerisi.chests) {
                         if (!c.aktif) continue;
-                        if (chestImg && chestImg.complete && chestImg.naturalWidth > 0) {
+                        if (chestImg.complete && chestImg.naturalWidth !== 0) {
                             ctx.drawImage(chestImg, c.x - 20, c.y - 20, 40, 40);
                         } else {
                             ctx.fillStyle = '#FFD700';
@@ -607,7 +655,7 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.stroke();
                     }
 
-                    // Oyuncuları Çiz (Tamamen Güvenli 'Broken State' Önleyici)
+                    // Oyuncuları Çiz
                     for (let id in oyunVerisi.players) {
                         let p = oyunVerisi.players[id];
                         if (p.gizli && id !== benimId) continue;
@@ -615,27 +663,17 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.save();
                         ctx.translate(p.x, p.y);
 
-                        if (p.avatar && p.avatar.length > 50) {
+                        if (p.avatar) {
                             if (!loadedImages[id]) {
-                                let img = new Image();
-                                img.src = p.avatar;
-                                loadedImages[id] = img;
+                                loadedImages[id] = new Image();
+                                loadedImages[id].src = p.avatar;
                             }
-                            
-                            let imgObj = loadedImages[id];
-                            if (imgObj && imgObj.complete && imgObj.naturalWidth > 0) {
-                                ctx.save();
-                                ctx.beginPath();
-                                ctx.arc(0, 0, 20, 0, Math.PI * 2);
-                                ctx.clip();
-                                ctx.drawImage(imgObj, -20, -20, 40, 40);
-                                ctx.restore();
-                            } else {
-                                ctx.fillStyle = p.renk || '#00ffcc';
-                                ctx.beginPath();
-                                ctx.arc(0, 0, 20, 0, Math.PI * 2);
-                                ctx.fill();
-                            }
+                            ctx.save();
+                            ctx.beginPath();
+                            ctx.arc(0, 0, 20, 0, Math.PI * 2);
+                            ctx.clip();
+                            ctx.drawImage(loadedImages[id], -20, -20, 40, 40);
+                            ctx.restore();
                         } else {
                             ctx.fillStyle = p.renk || '#00ffcc';
                             ctx.beginPath();
@@ -680,7 +718,6 @@ io.on('connection', (socket) => {
         y: spawn.y,
         can: 100,
         skor: 0,
-        oldurmeSayisi: 0,
         renk: NEON_RENKLER[Math.floor(Math.random() * NEON_RENKLER.length)],
         avatar: null,
         ozelHiz: 6,
@@ -728,10 +765,22 @@ io.on('connection', (socket) => {
         if (!p) return;
 
         if (data.secilenIndex === data.dogruCevap) {
-            p.skor += 5; 
-            p.can = Math.min(100, p.can + 100);
-            socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '🎉 Tebrikler Doğru Cevap! 5 Puan Kazandın ve Canını Fulledin.' });
-        } else {
+        
+            p.skor += 10;
+            
+            p.can = 100;
+            
+             
+            
+            socket.emit('chatMesajiGelsin', {
+            
+            isim: 'SİSTEM',
+            
+            mesaj: '🎉 Doğru cevap! +10 puan kazandın ve canın tamamen doldu.'
+            
+            });
+            9
+            } else {
             socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '❌ Üzgünüm Yanlış Cevap!' });
         }
     });
@@ -747,10 +796,9 @@ io.on('connection', (socket) => {
             sahipIsim: p.isim,
             x: p.x,
             y: p.y,
-            vx: Math.cos(aci) * 12,
-            vy: Math.sin(aci) * 12,
-            menzil: 150,
-            sekmeSayisi: 7 
+            vx: Math.cos(aci) * 14,
+            vy: Math.sin(aci) * 14,
+            menzil: 50
         });
     });
 
@@ -788,37 +836,11 @@ io.on('connection', (socket) => {
 setInterval(() => {
     for (let i = mermiler.length - 1; i >= 0; i--) {
         let m = mermiler[i];
-        
-        let sonrakiX = m.x + m.vx;
-        let sonrakiY = m.y + m.vy;
-
-        let duvaraCarpti = false;
-        for (let d of DUVARLAR) {
-            if (sonrakiX >= d.x && sonrakiX <= d.x + d.w && sonrakiY >= d.y && sonrakiY <= d.y + d.h) {
-                duvaraCarpti = true;
-                let xIcineGirdi = (m.x < d.x || m.x > d.x + d.w);
-                let yIcineGirdi = (m.y < d.y || m.y > d.y + d.h);
-                
-                if (xIcineGirdi) m.vx *= -1;
-                if (yIcineGirdi) m.vy *= -1;
-                if (!xIcineGirdi && !yIcineGirdi) { m.vx *= -1; m.vy *= -1; }
-                break;
-            }
-        }
-
-        if (duvaraCarpti) {
-            m.sekmeSayisi--;
-            if (m.sekmeSayisi <= 0) {
-                mermiler.splice(i, 1);
-                continue;
-            }
-        } else {
-            m.x = sonrakiX;
-            m.y = sonrakiY;
-        }
-
+        m.x += m.vx;
+        m.y += m.vy;
         m.menzil--;
-        if (m.menzil <= 0 || m.x < 0 || m.x > HARITA_GENISLIK || m.y < 0 || m.y > HARITA_YUKSEKLIK) {
+
+        if (m.menzil <= 0 || carpismaVarMi(m.x, m.y, 5) || m.x < 0 || m.x > HARITA_GENISLIK || m.y < 0 || m.y > HARITA_YUKSEKLIK) {
             mermiler.splice(i, 1);
             continue;
         }
@@ -829,13 +851,11 @@ setInterval(() => {
                 let mes = Math.hypot(hedef.x - m.x, hedef.y - m.y);
                 if (mes < 20) {
                     if (!hedef.godMode) {
-                        hedef.can -= 20;
+                        hedef.can -= 15;
                         if (hedef.can <= 0) {
                             io.emit('olumBildirimi', `💀 ${hedef.isim}, ${m.sahipIsim} tarafından avlandı!`);
-                            let avci = aktifOyuncular[m.sahipId];
-                            if (avci) {
-                                avci.skor += 1; 
-                                io.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: `⚔️ ${avci.isim} bir düşman avlayarak 1 Puan kazandı!` });
+                            if (aktifOyuncular[m.sahipId]) {
+                                aktifOyuncular[m.sahipId].skor += 1;
                             }
                             let sp = rastgeleSpawnBul();
                             hedef.x = sp.x;
