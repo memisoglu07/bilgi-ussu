@@ -131,7 +131,7 @@ app.get('/karakter-sec', (req, res) => {
 
                 function oyunaBasla() {
                     let isim = document.getElementById('oyuncuAdi').value || 'Savaşçı';
-                    let avatarData = canvas.toDataURL();
+                    let avatarData = canvas.toDataURL('image/webp', 0.7);
                     
                     sessionStorage.setItem('oyuncuIsim', isim);
                     sessionStorage.setItem('oyuncuAvatar', avatarData);
@@ -664,22 +664,56 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.translate(p.x, p.y);
 
                         if (p.avatar) {
-                            if (!loadedImages[id]) {
-                                loadedImages[id] = new Image();
-                                loadedImages[id].src = p.avatar;
-                            }
-                            ctx.save();
-                            ctx.beginPath();
-                            ctx.arc(0, 0, 20, 0, Math.PI * 2);
-                            ctx.clip();
-                            ctx.drawImage(loadedImages[id], -20, -20, 40, 40);
-                            ctx.restore();
-                        } else {
-                            ctx.fillStyle = p.renk || '#00ffcc';
-                            ctx.beginPath();
-                            ctx.arc(0, 0, 20, 0, Math.PI * 2);
-                            ctx.fill();
-                        }
+
+    if (!loadedImages[id]) {
+        loadedImages[id] = new Image();
+
+        loadedImages[id].onerror = () => {
+            delete loadedImages[id];
+        };
+
+        loadedImages[id].src = p.avatar;
+    }
+
+    if (
+        loadedImages[id] &&
+        loadedImages[id].complete &&
+        loadedImages[id].naturalWidth > 0
+    ) {
+
+        ctx.save();
+
+        ctx.beginPath();
+        ctx.arc(0, 0, 20, 0, Math.PI * 2);
+        ctx.clip();
+
+        ctx.drawImage(
+            loadedImages[id],
+            -20,
+            -20,
+            40,
+            40
+        );
+
+        ctx.restore();
+
+    } else {
+
+        ctx.fillStyle = p.renk || '#00ffcc';
+
+        ctx.beginPath();
+        ctx.arc(0, 0, 20, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+} else {
+
+    ctx.fillStyle = p.renk || '#00ffcc';
+
+    ctx.beginPath();
+    ctx.arc(0, 0, 20, 0, Math.PI * 2);
+    ctx.fill();
+}
 
                         ctx.strokeStyle = p.godMode ? '#00ffff' : '#FFD700';
                         ctx.lineWidth = 3;
