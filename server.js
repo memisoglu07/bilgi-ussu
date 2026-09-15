@@ -131,7 +131,7 @@ app.get('/karakter-sec', (req, res) => {
 
                 function oyunaBasla() {
                     let isim = document.getElementById('oyuncuAdi').value || 'Savaşçı';
-                    let avatarData = canvas.toDataURL('image/webp', 0.7);
+                    let avatarData = canvas.toDataURL();
                     
                     sessionStorage.setItem('oyuncuIsim', isim);
                     sessionStorage.setItem('oyuncuAvatar', avatarData);
@@ -328,7 +328,7 @@ app.get('/oyun-alani', (req, res) => {
             <div id="muzikPaneli">
                 <span id="sesIkona" style="cursor:pointer; font-size:18px;" onclick="toggleMuzik()" title="Sesi Aç/Kapat">🔊</span>
                 <button onclick="oynat('pixel-drift.mp3')">Pixel Drift</button>
-                
+                <button onclick="play('asphalt-menace.mp3')">Asphalt Menace</button>
                 <button onclick="oynat('cybernetic-assault.mp3')">Cybernetic Assault</button>
             </div>
 
@@ -664,56 +664,22 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.translate(p.x, p.y);
 
                         if (p.avatar) {
-
-    if (!loadedImages[id]) {
-        loadedImages[id] = new Image();
-
-        loadedImages[id].onerror = () => {
-            delete loadedImages[id];
-        };
-
-        loadedImages[id].src = p.avatar;
-    }
-
-    if (
-        loadedImages[id] &&
-        loadedImages[id].complete &&
-        loadedImages[id].naturalWidth > 0
-    ) {
-
-        ctx.save();
-
-        ctx.beginPath();
-        ctx.arc(0, 0, 20, 0, Math.PI * 2);
-        ctx.clip();
-
-        ctx.drawImage(
-            loadedImages[id],
-            -20,
-            -20,
-            40,
-            40
-        );
-
-        ctx.restore();
-
-    } else {
-
-        ctx.fillStyle = p.renk || '#00ffcc';
-
-        ctx.beginPath();
-        ctx.arc(0, 0, 20, 0, Math.PI * 2);
-        ctx.fill();
-    }
-
-} else {
-
-    ctx.fillStyle = p.renk || '#00ffcc';
-
-    ctx.beginPath();
-    ctx.arc(0, 0, 20, 0, Math.PI * 2);
-    ctx.fill();
-}
+                            if (!loadedImages[id]) {
+                                loadedImages[id] = new Image();
+                                loadedImages[id].src = p.avatar;
+                            }
+                            ctx.save();
+                            ctx.beginPath();
+                            ctx.arc(0, 0, 20, 0, Math.PI * 2);
+                            ctx.clip();
+                            ctx.drawImage(loadedImages[id], -20, -20, 40, 40);
+                            ctx.restore();
+                        } else {
+                            ctx.fillStyle = p.renk || '#00ffcc';
+                            ctx.beginPath();
+                            ctx.arc(0, 0, 20, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
 
                         ctx.strokeStyle = p.godMode ? '#00ffff' : '#FFD700';
                         ctx.lineWidth = 3;
@@ -799,22 +765,10 @@ io.on('connection', (socket) => {
         if (!p) return;
 
         if (data.secilenIndex === data.dogruCevap) {
-        
             p.skor += 10;
-            
-            p.can = 100;
-            
-             
-            
-            socket.emit('chatMesajiGelsin', {
-            
-            isim: 'SİSTEM',
-            
-            mesaj: '🎉 Doğru cevap! +10 puan kazandın ve canın tamamen doldu.'
-            
-            });
-            9
-            } else {
+            p.can = Math.min(100, p.can + 100);
+            socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '🎉 Tebrikler 10 Puan Kazandın ve Canını Fulledin.' });
+        } else {
             socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '❌ Üzgünüm Yanlış Cevap!' });
         }
     });
