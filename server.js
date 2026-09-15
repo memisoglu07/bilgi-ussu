@@ -9,7 +9,6 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Bulut sunucuların atayacağı dinamik portu yakala (Render/Railway uyumlu)
 const PORT = process.env.PORT || 3000;
 
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
@@ -18,7 +17,6 @@ app.use(bodyParser.json({ limit: '10mb' }));
 app.use('/muzik', express.static(path.join(__dirname, 'ses/muzik')));
 app.use('/karakterler', express.static(path.join(__dirname, '../oyun_projem/karakterler')));
 
-// Veritabanı Bağlantısı (Render/Bulut Uyumlu)
 const db = mysql.createConnection({ 
     host: process.env.DB_HOST || '127.0.0.1', 
     port: process.env.DB_PORT || 8889, 
@@ -588,10 +586,10 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.strokeRect(d.x, d.y, d.w, d.h);
                     }
 
-                    // Sandıkları Çiz
+                    // Sandıkları Çiz (Garantili Yükleme Kontrolüyle)
                     for (let c of oyunVerisi.chests) {
                         if (!c.aktif) continue;
-                        if (chestImg.complete && chestImg.naturalWidth !== 0) {
+                        if (chestImg && chestImg.complete && chestImg.naturalWidth > 0) {
                             ctx.drawImage(chestImg, c.x - 20, c.y - 20, 40, 40);
                         } else {
                             ctx.fillStyle = '#FFD700';
@@ -609,7 +607,7 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.stroke();
                     }
 
-                    // Oyuncuları Çiz (Güvenli Avatar Kontrolü ile)
+                    // Oyuncuları Çiz (Tamamen Güvenli 'Broken State' Önleyici)
                     for (let id in oyunVerisi.players) {
                         let p = oyunVerisi.players[id];
                         if (p.gizli && id !== benimId) continue;
@@ -617,7 +615,7 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.save();
                         ctx.translate(p.x, p.y);
 
-                        if (p.avatar) {
+                        if (p.avatar && p.avatar.length > 50) {
                             if (!loadedImages[id]) {
                                 let img = new Image();
                                 img.src = p.avatar;
@@ -625,7 +623,7 @@ app.get('/oyun-alani', (req, res) => {
                             }
                             
                             let imgObj = loadedImages[id];
-                            if (imgObj.complete && imgObj.naturalWidth !== 0) {
+                            if (imgObj && imgObj.complete && imgObj.naturalWidth > 0) {
                                 ctx.save();
                                 ctx.beginPath();
                                 ctx.arc(0, 0, 20, 0, Math.PI * 2);
@@ -730,7 +728,7 @@ io.on('connection', (socket) => {
         if (!p) return;
 
         if (data.secilenIndex === data.dogruCevap) {
-            p.skor += 5; // Soru çözünce 5 puan
+            p.skor += 5; 
             p.can = Math.min(100, p.can + 100);
             socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '🎉 Tebrikler Doğru Cevap! 5 Puan Kazandın ve Canını Fulledin.' });
         } else {
@@ -752,7 +750,7 @@ io.on('connection', (socket) => {
             vx: Math.cos(aci) * 12,
             vy: Math.sin(aci) * 12,
             menzil: 150,
-            sekmeSayisi: 7 // 7 kez sekme hakkı
+            sekmeSayisi: 7 
         });
     });
 
@@ -794,7 +792,6 @@ setInterval(() => {
         let sonrakiX = m.x + m.vx;
         let sonrakiY = m.y + m.vy;
 
-        // Duvar Çarpışması ve Sekme Mantığı (7 kez sekme)
         let duvaraCarpti = false;
         for (let d of DUVARLAR) {
             if (sonrakiX >= d.x && sonrakiX <= d.x + d.w && sonrakiY >= d.y && sonrakiY <= d.y + d.h) {
@@ -837,7 +834,7 @@ setInterval(() => {
                             io.emit('olumBildirimi', `💀 ${hedef.isim}, ${m.sahipIsim} tarafından avlandı!`);
                             let avci = aktifOyuncular[m.sahipId];
                             if (avci) {
-                                avci.skor += 1; // Adam öldürünce 1 puan
+                                avci.skor += 1; 
                                 io.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: `⚔️ ${avci.isim} bir düşman avlayarak 1 Puan kazandı!` });
                             }
                             let sp = rastgeleSpawnBul();
