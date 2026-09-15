@@ -170,10 +170,10 @@ const HARITA_GENISLIK = 2000;
 const HARITA_YUKSEKLIK = 1500;
 
 const BOLGELER = [
-    { isim: "MAVİ BÖLGE", x: 0, y: 0, w: 1000, h: 750, renk: "rgba(0, 100, 200, 0.03)", yaziRengi: "rgba(0, 120, 255, 0.12)" },
-    { isim: "SARI BÖLGE", x: 1000, y: 0, w: 1000, h: 750, renk: "rgba(200, 180, 0, 0.03)", yaziRengi: "rgba(255, 215, 0, 0.12)" },
-    { isim: "SİYAH BÖLGE", x: 0, y: 750, w: 1000, h: 750, renk: "rgba(20, 20, 20, 0.06)", yaziRengi: "rgba(150, 150, 150, 0.12)" },
-    { isim: "YEŞİL BÖLGE", x: 1000, y: 750, w: 1000, h: 750, renk: "rgba(0, 180, 80, 0.03)", yaziRengi: "rgba(0, 255, 100, 0.12)" }
+    { isim: "MAVİ BÖLGE", x: 0, y: 0, w: 1000, h: 750, renk: "rgba(0, 100, 200, 0.04)", yaziRengi: "rgba(0, 120, 255, 0.15)" },
+    { isim: "SARI BÖLGE", x: 1000, y: 0, w: 1000, h: 750, renk: "rgba(200, 180, 0, 0.04)", yaziRengi: "rgba(255, 215, 0, 0.15)" },
+    { isim: "SİYAH BÖLGE", x: 0, y: 750, w: 1000, h: 750, renk: "rgba(30, 30, 30, 0.08)", yaziRengi: "rgba(180, 180, 180, 0.15)" },
+    { isim: "YEŞİL BÖLGE", x: 1000, y: 750, w: 1000, h: 750, renk: "rgba(0, 180, 80, 0.04)", yaziRengi: "rgba(0, 255, 100, 0.15)" }
 ];
 
 const DUVARLAR = [
@@ -763,12 +763,12 @@ app.get('/oyun-alani', (req, res) => {
                     ctx.save();
                     ctx.translate(-kameraX, -kameraY);
 
-                    // Şık ve sadeleştirilmiş bölgeler
+                    // Harita Bölgeleri
                     let bolgeler = oyunVerisi.bolgeler || ${JSON.stringify(BOLGELER)};
                     bolgeler.forEach(b => {
                         ctx.fillStyle = b.renk;
                         ctx.fillRect(b.x, b.y, b.w, b.h);
-                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
                         ctx.lineWidth = 2;
                         ctx.strokeRect(b.x, b.y, b.w, b.h);
                         ctx.fillStyle = b.yaziRengi;
@@ -776,16 +776,16 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.fillText(b.isim, b.x + 50, b.y + 70);
                     });
 
-                    // Duvarları çiz
+                    // Duvarlar
                     let walls = oyunVerisi.walls || ${JSON.stringify(DUVARLAR)};
-                    ctx.fillStyle = '#2a2a2a';
+                    ctx.fillStyle = '#222';
                     walls.forEach(d => {
                         ctx.fillRect(d.x, d.y, d.w, d.h);
-                        ctx.strokeStyle = '#444';
+                        ctx.strokeStyle = '#383838';
                         ctx.strokeRect(d.x, d.y, d.w, d.h);
                     });
 
-                    // Chest'leri çiz
+                    // Chestler
                     let chests = oyunVerisi.chests || ${JSON.stringify(chestler)};
                     chests.forEach(c => {
                         if (c.aktif && chestImg.complete) {
@@ -793,7 +793,7 @@ app.get('/oyun-alani', (req, res) => {
                         }
                     });
 
-                    // Mermileri çiz
+                    // Mermiler
                     let bullets = oyunVerisi.bullets || [];
                     ctx.fillStyle = '#00ffcc';
                     bullets.forEach(m => {
@@ -802,33 +802,38 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.fill();
                     });
 
-                    // Oyuncuları ve Avatarları Çiz
+                    // Oyuncular ve Karakter Avatarları
                     let players = oyunVerisi.players || {};
                     for (let id in players) {
                         let p = players[id];
                         ctx.save();
                         ctx.translate(p.x, p.y);
 
-                        // Dış Çerçeve ve Arka plan
+                        // Taban Çember
                         ctx.fillStyle = '#1e1e1e';
                         ctx.beginPath();
                         ctx.arc(0, 0, 22, 0, Math.PI * 2);
                         ctx.fill();
 
-                        // Oyuncu Görseli / Avatarı
+                        // Oyuncu Özel Avatarı (Canvas'tan gelen çizim/resim)
                         if (p.avatar && p.avatar.startsWith('data:image')) {
                             if (!loadedImages[id]) {
                                 let img = new Image();
                                 img.src = p.avatar;
                                 loadedImages[id] = img;
                             }
-                            if (loadedImages[id].complete) {
+                            if (loadedImages[id].complete && loadedImages[id].naturalWidth !== 0) {
                                 ctx.save();
                                 ctx.beginPath();
                                 ctx.arc(0, 0, 20, 0, Math.PI * 2);
                                 ctx.clip();
                                 ctx.drawImage(loadedImages[id], -20, -20, 40, 40);
                                 ctx.restore();
+                            } else {
+                                ctx.fillStyle = '#ff4757';
+                                ctx.beginPath();
+                                ctx.arc(0, 0, 20, 0, Math.PI * 2);
+                                ctx.fill();
                             }
                         } else {
                             ctx.fillStyle = '#ff4757';
@@ -848,7 +853,7 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.fillStyle = 'red';
                         ctx.fillRect(-25, -34, 50, 5);
                         ctx.fillStyle = 'lime';
-                        ctx.fillRect(-25, -34, (p.can / 100) * 50, 5);
+                        ctx.fillRect(-25, -34, Math.max(0, (p.can / 100) * 50), 5);
 
                         // İsim Etiketi
                         ctx.fillStyle = '#fff';
