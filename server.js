@@ -7,39 +7,25 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-    cors: { origin: "*", methods: ["GET", "POST"] }
-});
+const io = new Server(server);
 
 const PORT = process.env.PORT || 3000;
 
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 app.use(bodyParser.json({ limit: '10mb' }));
 
-app.use(express.static(__dirname));
-app.use('/ses', express.static(path.join(__dirname, 'ses')));
 app.use('/muzik', express.static(path.join(__dirname, 'ses/muzik')));
-app.use('/karakterler', express.static(path.join(__dirname, 'karakterler')));
+app.use('/karakterler', express.static(path.join(__dirname, '../oyun_projem/karakterler')));
 
-// VERCEL ÇÖKMESİNİ ENGELLEYEN VERİTABANI BAĞLANTISI
-let db;
-if (process.env.DB_HOST) {
-    db = mysql.createConnection({ 
-        host: process.env.DB_HOST, 
-        port: process.env.DB_PORT || 3306, 
-        user: process.env.DB_USER, 
-        password: process.env.DB_PASSWORD, 
-        database: process.env.DB_NAME 
-    });
-    db.connect((err) => {
-        if (err) console.log("⚠️ Veritabanı bağlantı hatası, bellek modunda devam ediliyor.");
-        else console.log("✅ Veritabanı bağlantısı başarılı.");
-    });
-} else {
-    console.log("ℹ️ Vercel / Bellek İçi Mod Aktif.");
-}
+const db = mysql.createConnection({ 
+    host: process.env.DB_HOST || '127.0.0.1', 
+    port: process.env.DB_PORT || 8889, 
+    user: process.env.DB_USER || 'root', 
+    password: process.env.DB_PASSWORD || 'root', 
+    database: process.env.DB_NAME || 'bilgi_ussu_proje' 
+});
 
-const layout = (content, title = "BİLGİ ÜSSÜ - BRAWL ARENA") => `
+const layout = (content, title = "Bilgi Üssü") => `
     <!DOCTYPE html><html><head><title>${title}</title><style>
         body { background:#0a0a0a; color:#FFD700; font-family: 'Segoe UI', sans-serif; margin:0; min-height:100vh; display:flex; justify-content:center; align-items:center; }
         .box { background:linear-gradient(145deg, #1e1e1e, #000); padding:40px; border-radius:20px; border:2px solid #FFD700; width:500px; text-align:center; box-shadow:0 0 40px rgba(255,215,0,0.2); }
@@ -160,12 +146,7 @@ const FEN_SORULARI = [
     { soru: "Halkasıyla bilinen en büyük gaz devi gezegen hangisidir?", secenekler: ["Jüpiter", "Satürn", "Uranüs", "Neptün"], cevap: 1 },
     { soru: "Güneş sisteminin en sıcak gezegeni hangisidir?", secenekler: ["Merkür", "Venüs", "Mars", "Jüpiter"], cevap: 1 },
     { soru: "Üzerinde sıvı su bulunduran ve yaşam olan tek gezegen hangisidir?", secenekler: ["Mars", "Venüs", "Dünya", "Neptün"], cevap: 2 },
-    { soru: "Kızıl Gezegen olarak bilinen gezegen hangisidir?", secenekler: ["Jüpiter", "Mars", "Satürn", "Merkür"], cevap: 1 },
-    { soru: "Güneş sisteminin en büyük gezegeni hangisidir?", secenekler: ["Satürn", "Jüpiter", "Uranüs", "Neptün"], cevap: 1 },
-    { soru: "Güneş'e en uzak olan gezegen hangisidir?", secenekler: ["Uranüs", "Neptün", "Satürn", "Jüpiter"], cevap: 1 },
-    { soru: "Güneş tutulmasında hangi gök cismi ortadadır?", secenekler: ["Dünya", "Güneş", "Ay", "Mars"], cevap: 2 },
-    { soru: "Ay tutulmasında hangi gök cismi ortadadır?", secenekler: ["Ay", "Dünya", "Güneş", "Venüs"], cevap: 1 },
-    { soru: "Güneş tutulması olayı ayın hangi evresinde gerçekleşir?", secenekler: ["Yeni Ay", "Dolunay", "İlk Dördün", "Son Dördün"], cevap: 0 }
+    { soru: "Kızıl Gezegen olarak bilinen gezegen hangisidir?", secenekler: ["Jüpiter", "Mars", "Satürn", "Merkür"], cevap: 1 }
 ];
 
 const HARITA_GENISLIK = 2000;
@@ -284,7 +265,7 @@ app.get('/oyun-alani', (req, res) => {
             .kill-msg { background: rgba(0, 0, 0, 0.65); border-left: 4px solid #ff4757; color: #fff; padding: 6px 12px; font-size: 13px; font-weight: bold; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
         </style></head><body>
             <div class="ui">⭐ BİLGİ ÜSSÜ FEN BİLİMLERİ ARENA ⭐</div>
-            <div class="bilgi">Hareket: <b>W,A,S,D</b> | Ateş Et: <b>Sol Tık</b> | <a href="/karakter-sec" style="color:#ff4757; text-decoration:none;">Karakter Değiştir</a></div>
+            <div class="bilgi">Hareket: <b>W,A,S,D</b> | Ateş Et: <b>Sol Tık (Mermiler 7 kez seker!)</b> | <a href="/karakter-sec" style="color:#ff4757; text-decoration:none;">Karakter Değiştir</a></div>
             
             <div id="ustPanel">
                 <div class="panelKutusu">
@@ -304,9 +285,9 @@ app.get('/oyun-alani', (req, res) => {
             </div>
 
             <div id="adminSifreModal">
-                <h3>🔒 YÖNETİCİ ŞİFRESİ GEREKLİ</h3>
-                <p style="font-size:12px; color:#aaa;">Hile konsolunu açmak için şifreyi gir:</p>
-                <input type="password" id="sifreInput" placeholder="Şifre" autocomplete="off">
+                <h3>Bakımda</h3>
+                <p style="font-size:12px; color:#aaa;">Bu yerde oyunun geliştiricisine özel mesaj gönderilmesi planlanıyor:</p>
+                <input type="password" id="sifreInput" placeholder="Geliştiriciye Mesaj Gönder" autocomplete="off">
                 <button class="secenekBtn" onclick="sifreyiKontrolEt()" style="background:#ff8c00; color:#000; font-weight:bold;">Giriş Yap</button>
             </div>
 
@@ -368,7 +349,7 @@ app.get('/oyun-alani', (req, res) => {
                 const isim = sessionStorage.getItem('oyuncuIsim') || 'Savaşçı';
                 const benimAvatarim = sessionStorage.getItem('oyuncuAvatar') || '';
 
-                const socket = io({ query: { isim: isim }, forceNew: true, transports: ['websocket', 'polling'] });
+                const socket = io({ query: { isim: isim }, forceNew: true });
                 socket.on('connect', () => { socket.emit('avatarGuncelle', benimAvatarim); });
 
                 const canvas = document.getElementById('arena');
@@ -376,7 +357,11 @@ app.get('/oyun-alani', (req, res) => {
 
                 let oyunVerisi = { players: {}, bullets: [], walls: ${JSON.stringify(DUVARLAR)}, chests: ${JSON.stringify(chestler)}, bolgeler: ${JSON.stringify(BOLGELER)}, kalanSure: 300 };
                 let loadedImages = {};
+                
                 let chestImg = new Image();
+                let chestHatali = false;
+                chestImg.onload = function() { chestHatali = false; };
+                chestImg.onerror = function() { chestHatali = true; };
                 chestImg.src = '/karakterler/Chest.webp';
 
                 let tuslar = {};
@@ -514,7 +499,7 @@ app.get('/oyun-alani', (req, res) => {
                         let oyuncuDizi = Object.values(data.players).sort((a, b) => b.skor - a.skor);
                         oyuncuDizi.slice(0, 5).forEach((p, index) => {
                             let li = document.createElement('li');
-                            li.innerHTML = `${index + 1}. ${p.isim}: <b style="color:#FFD700;">${p.skor}⭐</b>`;
+                            li.innerHTML = \`\${index + 1}. \${p.isim}: <b style="color:#FFD700;">\${p.skor}⭐</b>\`;
                             liste.appendChild(li);
                         });
                     }
@@ -556,7 +541,7 @@ app.get('/oyun-alani', (req, res) => {
                     const chatGecmisi = document.getElementById('chatGecmisi');
                     const div = document.createElement('div');
                     div.className = 'chat-satir';
-                    div.innerHTML = `<b style="color: #FFD700;">${data.isim}:</b> ${data.mesaj}`;
+                    div.innerHTML = \`<b style="color: #FFD700;">\${data.isim}:</b> \${data.mesaj}\`;
                     chatGecmisi.appendChild(div);
                     if (chatGecmisi.children.length > 6) chatGecmisi.children[0].remove();
                     chatGecmisi.scrollTop = chatGecmisi.scrollHeight;
@@ -571,85 +556,128 @@ app.get('/oyun-alani', (req, res) => {
                     let kameraX = 0, kameraY = 0;
                     if (ben) {
                         kameraX = Math.max(0, Math.min(ben.x - canvas.width / 2, ${HARITA_GENISLIK} - canvas.width));
-                        kameraY = Math.max(0, Math.min(ben.y - canvas.height / 2, ${HARITA_YUKSEKLIK} - canvas.height));
+                        kameraY = Math.max(0, Math.min(ben.y - canvas.height / 2, 1500 - canvas.height));
                     }
 
                     ctx.save();
                     ctx.translate(-kameraX, -kameraY);
 
-                    if (oyunVerisi.bolgeler) {
-                        oyunVerisi.bolgeler.forEach(b => {
-                            ctx.fillStyle = b.renk;
-                            ctx.fillRect(b.x, b.y, b.w, b.h);
-                            ctx.fillStyle = b.yaziRengi;
-                            ctx.font = "bold 28px sans-serif";
-                            ctx.fillText(b.isim, b.x + 40, b.y + 50);
-                        });
+                    // Harita Arka Planı
+                    ctx.fillStyle = '#1e1e1e';
+                    ctx.fillRect(0, 0, ${HARITA_GENISLIK}, ${HARITA_YUKSEKLIK});
+
+                    // Bölgeleri Çiz
+                    for (let b of oyunVerisi.bolgeler) {
+                        ctx.fillStyle = b.renk;
+                        ctx.fillRect(b.x, b.y, b.w, b.h);
+                        
+                        ctx.strokeStyle = b.yaziRengi;
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(b.x, b.y, b.w, b.h);
+
+                        ctx.fillStyle = b.yaziRengi;
+                        ctx.font = 'bold 24px Segoe UI';
+                        ctx.textAlign = 'center';
+                        ctx.fillText("📍 " + b.isim, b.x + b.w / 2, b.y + 50);
                     }
 
-                    if (oyunVerisi.walls) {
-                        ctx.fillStyle = "#333";
-                        ctx.strokeStyle = "#FFD700";
+                    // Duvarları Çiz
+                    for (let d of oyunVerisi.walls) {
+                        ctx.fillStyle = '#2c3e50';
+                        ctx.fillRect(d.x, d.y, d.w, d.h);
+                        ctx.strokeStyle = '#FFD700';
                         ctx.lineWidth = 2;
-                        oyunVerisi.walls.forEach(w => {
-                            ctx.fillRect(w.x, w.y, w.w, w.h);
-                            ctx.strokeRect(w.x, w.y, w.w, w.h);
-                        });
+                        ctx.strokeRect(d.x, d.y, d.w, d.h);
                     }
 
-                    if (oyunVerisi.chests) {
-                        oyunVerisi.chests.forEach(c => {
-                            if (c.aktif) {
-                                if (chestImg.complete) {
-                                    ctx.drawImage(chestImg, c.x - 20, c.y - 20, 40, 40);
-                                } else {
-                                    ctx.fillStyle = "#FFD700";
-                                    ctx.fillRect(c.x - 20, c.y - 20, 40, 40);
-                                }
+                    // Sandıkları Çiz (Hata Geçirmez Güvenli Çizim)
+                    for (let c of oyunVerisi.chests) {
+                        if (!c.aktif) continue;
+                        if (!chestHatali && chestImg && chestImg.complete && chestImg.naturalWidth > 0) {
+                            try {
+                                ctx.drawImage(chestImg, c.x - 20, c.y - 20, 40, 40);
+                            } catch (e) {
+                                chestHatali = true;
                             }
-                        });
+                        } else {
+                            ctx.fillStyle = '#FFD700';
+                            ctx.fillRect(c.x - 15, c.y - 15, 30, 30);
+                            ctx.strokeStyle = '#000';
+                            ctx.lineWidth = 2;
+                            ctx.strokeRect(c.x - 15, c.y - 15, 30, 30);
+                        }
                     }
 
-                    if (oyunVerisi.bullets) {
-                        oyunVerisi.bullets.forEach(b => {
-                            ctx.fillStyle = "#ff4757";
-                            ctx.beginPath();
-                            ctx.arc(b.x, b.y, 6, 0, Math.PI * 2);
-                            ctx.fill();
-                        });
+                    // Mermileri Çiz
+                    for (let m of oyunVerisi.bullets) {
+                        ctx.fillStyle = '#ff4757';
+                        ctx.beginPath();
+                        ctx.arc(m.x, m.y, 6, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.strokeStyle = '#fff';
+                        ctx.stroke();
                     }
 
+                    // Oyuncuları Çiz
                     for (let id in oyunVerisi.players) {
                         let p = oyunVerisi.players[id];
-                        if (p.gorunmez) continue;
+                        if (p.gizli && id !== benimId) continue;
 
-                        if (p.avatarData) {
+                        ctx.save();
+                        ctx.translate(p.x, p.y);
+
+                        if (p.avatar && p.avatar.length > 50) {
                             if (!loadedImages[id]) {
-                                loadedImages[id] = new Image();
-                                loadedImages[id].src = p.avatarData;
+                                let img = new Image();
+                                img.src = p.avatar;
+                                loadedImages[id] = img;
                             }
-                            ctx.save();
-                            ctx.beginPath();
-                            ctx.arc(p.x, p.y, 25, 0, Math.PI * 2);
-                            ctx.clip();
-                            ctx.drawImage(loadedImages[id], p.x - 25, p.y - 25, 50, 50);
-                            ctx.restore();
+                            
+                            let imgObj = loadedImages[id];
+                            if (imgObj && imgObj.complete && imgObj.naturalWidth > 0) {
+                                ctx.save();
+                                ctx.beginPath();
+                                ctx.arc(0, 0, 20, 0, Math.PI * 2);
+                                ctx.clip();
+                                try {
+                                    ctx.drawImage(imgObj, -20, -20, 40, 40);
+                                } catch (e) {
+                                    ctx.fillStyle = p.renk || '#00ffcc';
+                                    ctx.beginPath();
+                                    ctx.arc(0, 0, 20, 0, Math.PI * 2);
+                                    ctx.fill();
+                                }
+                                ctx.restore();
+                            } else {
+                                ctx.fillStyle = p.renk || '#00ffcc';
+                                ctx.beginPath();
+                                ctx.arc(0, 0, 20, 0, Math.PI * 2);
+                                ctx.fill();
+                            }
                         } else {
-                            ctx.fillStyle = p.renk || "#00ffcc";
+                            ctx.fillStyle = p.renk || '#00ffcc';
                             ctx.beginPath();
-                            ctx.arc(p.x, p.y, 25, 0, Math.PI * 2);
+                            ctx.arc(0, 0, 20, 0, Math.PI * 2);
                             ctx.fill();
                         }
 
-                        ctx.fillStyle = "#ff4757";
-                        ctx.fillRect(p.x - 25, p.y - 35, 50, 6);
-                        ctx.fillStyle = "#2ed573";
-                        ctx.fillRect(p.x - 25, p.y - 35, (p.can / 100) * 50, 6);
+                        ctx.strokeStyle = p.godMode ? '#00ffff' : '#FFD700';
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.arc(0, 0, 20, 0, Math.PI * 2);
+                        ctx.stroke();
 
-                        ctx.fillStyle = "#fff";
-                        ctx.font = "bold 12px sans-serif";
-                        ctx.textAlign = "center";
-                        ctx.fillText(p.isim, p.x, p.y - 42);
+                        ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
+                        ctx.fillRect(-20, -32, 40, 5);
+                        ctx.fillStyle = '#00ff64';
+                        ctx.fillRect(-20, -32, (Math.max(0, p.can) / 100) * 40, 5);
+
+                        ctx.fillStyle = '#fff';
+                        ctx.font = 'bold 12px Segoe UI';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(p.isim, 0, -38);
+
+                        ctx.restore();
                     }
 
                     ctx.restore();
@@ -670,30 +698,35 @@ io.on('connection', (socket) => {
         y: spawn.y,
         can: 100,
         skor: 0,
+        oldurmeSayisi: 0,
         renk: NEON_RENKLER[Math.floor(Math.random() * NEON_RENKLER.length)],
-        avatarData: '',
+        avatar: null,
         ozelHiz: 6,
         godMode: false,
-        gorunmez: false
+        gizli: false
     };
 
     socket.on('avatarGuncelle', (avatarData) => {
         if (aktifOyuncular[socket.id]) {
-            aktifOyuncular[socket.id].avatarData = avatarData;
+            aktifOyuncular[socket.id].avatar = avatarData;
         }
     });
 
-    socket.on('hareketEt', (hareket) => {
+    socket.on('hareketEt', (data) => {
         let p = aktifOyuncular[socket.id];
         if (!p) return;
 
-        let yeniX = p.x + hareket.x;
-        let yeniY = p.y + hareket.y;
+        let yeniX = p.x + data.x;
+        let yeniY = p.y + data.y;
 
-        if (!carpismaVarMi(yeniX, p.y, 25)) p.x = yeniX;
-        if (!carpismaVarMi(p.x, yeniY, 25)) p.y = yeniY;
+        if (yeniX >= 20 && yeniX <= HARITA_GENISLIK - 20 && !carpismaVarMi(yeniX, p.y, 20)) {
+            p.x = yeniX;
+        }
+        if (yeniY >= 20 && yeniY <= HARITA_YUKSEKLIK - 20 && !carpismaVarMi(p.x, yeniY, 20)) {
+            p.y = yeniY;
+        }
 
-        chestler.forEach(c => {
+        for (let c of chestler) {
             if (c.aktif) {
                 let dist = Math.hypot(p.x - c.x, p.y - c.y);
                 if (dist < 35) {
@@ -702,9 +735,10 @@ io.on('connection', (socket) => {
                     socket.emit('soruGoster', { chestId: c.id, soruData: rastgeleSoru });
 
                     setTimeout(() => { c.aktif = true; }, 15000);
+                    break;
                 }
             }
-        });
+        }
     });
 
     socket.on('cevapVer', (data) => {
@@ -712,60 +746,55 @@ io.on('connection', (socket) => {
         if (!p) return;
 
         if (data.secilenIndex === data.dogruCevap) {
-            p.skor = p.skor === 0 ? 2 : p.skor * 2;
-            p.can = 100;
-            socket.emit('chatMesajiGelsin', { 
-                isim: 'SİSTEM', 
-                mesaj: `🎉 Doğru Cevap! Puanın 2'ye katlandı (${p.skor} Puan) ve Canın Fullendi! ❤️` 
-            });
+            p.skor += 5; 
+            p.can = Math.min(100, p.can + 100);
+            socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '🎉 Tebrikler Doğru Cevap! 5 Puan Kazandın ve Canını Fulledin.' });
         } else {
-            socket.emit('chatMesajiGelsin', { 
-                isim: 'SİSTEM', 
-                mesaj: '❌ Yanlış Cevap! Şansını tekrar dene.' 
-            });
+            socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '❌ Üzgünüm Yanlış Cevap!' });
         }
     });
 
-    socket.on('atesEt', (hedef) => {
+    socket.on('atesEt', (data) => {
         let p = aktifOyuncular[socket.id];
         if (!p) return;
 
-        let aci = Math.atan2(hedef.y - p.y, hedef.x - p.x);
+        let aci = Math.atan2(data.y - p.y, data.x - p.x);
         mermiler.push({
-            id: socket.id,
+            id: Math.random().toString(),
+            sahipId: socket.id,
+            sahipIsim: p.isim,
             x: p.x,
             y: p.y,
             vx: Math.cos(aci) * 12,
-            vy: Math.sin(aci) * 12
+            vy: Math.sin(aci) * 12,
+            menzil: 150,
+            sekmeSayisi: 7 
         });
     });
 
-    socket.on('chatMesaji', (mesaj) => {
+    socket.on('chatMesaji', (msg) => {
         let p = aktifOyuncular[socket.id];
         if (p) {
-            io.emit('chatMesajiGelsin', { isim: p.isim, mesaj: mesaj });
+            io.emit('chatMesajiGelsin', { isim: p.isim, mesaj: msg });
         }
     });
 
-    socket.on('adminKomut', (komutMetni) => {
+    socket.on('adminKomut', (komut) => {
         let p = aktifOyuncular[socket.id];
         if (!p) return;
+        let parcalar = komut.split(' ');
+        let cmd = parcalar[0].toLowerCase();
+        let val = parseInt(parcalar[1]) || 10;
 
-        let parcalar = komutMetni.split(' ');
-        let komut = parcalar[0].toLowerCase();
-        let parametre = parseInt(parcalar[1]) || 10;
-
-        if (komut === 'god') {
+        if (cmd === 'god') {
             p.godMode = true;
-            socket.emit('chatMesajiGelsin', { isim: 'YÖNETİCİ', mesaj: `⚡ Ölümsüzlük ${parametre} saniye aktif!` });
-            setTimeout(() => { p.godMode = false; }, parametre * 1000);
-        } else if (komut === 'speed') {
-            p.ozelHiz = parametre;
-            socket.emit('chatMesajiGelsin', { isim: 'YÖNETİCİ', mesaj: `⚡ Hızın ${parametre} yapıldı!` });
-        } else if (komut === 'invisibility') {
-            p.gorunmez = true;
-            socket.emit('chatMesajiGelsin', { isim: 'YÖNETİCİ', mesaj: `👻 Görünmezlik ${parametre} saniye aktif!` });
-            setTimeout(() => { p.gorunmez = false; }, parametre * 1000);
+            setTimeout(() => { p.godMode = false; }, val * 1000);
+        } else if (cmd === 'speed') {
+            p.ozelHiz = val;
+            setTimeout(() => { p.ozelHiz = 6; }, 10000);
+        } else if (cmd === 'invisibility') {
+            p.gizli = true;
+            setTimeout(() => { p.gizli = false; }, val * 1000);
         }
     });
 
@@ -777,32 +806,59 @@ io.on('connection', (socket) => {
 setInterval(() => {
     for (let i = mermiler.length - 1; i >= 0; i--) {
         let m = mermiler[i];
-        m.x += m.vx;
-        m.y += m.vy;
+        
+        let sonrakiX = m.x + m.vx;
+        let sonrakiY = m.y + m.vy;
 
-        if (carpismaVarMi(m.x, m.y, 6)) {
+        let duvaraCarpti = false;
+        for (let d of DUVARLAR) {
+            if (sonrakiX >= d.x && sonrakiX <= d.x + d.w && sonrakiY >= d.y && sonrakiY <= d.y + d.h) {
+                duvaraCarpti = true;
+                let xIcineGirdi = (m.x < d.x || m.x > d.x + d.w);
+                let yIcineGirdi = (m.y < d.y || m.y > d.y + d.h);
+                
+                if (xIcineGirdi) m.vx *= -1;
+                if (yIcineGirdi) m.vy *= -1;
+                if (!xIcineGirdi && !yIcineGirdi) { m.vx *= -1; m.vy *= -1; }
+                break;
+            }
+        }
+
+        if (duvaraCarpti) {
+            m.sekmeSayisi--;
+            if (m.sekmeSayisi <= 0) {
+                mermiler.splice(i, 1);
+                continue;
+            }
+        } else {
+            m.x = sonrakiX;
+            m.y = sonrakiY;
+        }
+
+        m.menzil--;
+        if (m.menzil <= 0 || m.x < 0 || m.x > HARITA_GENISLIK || m.y < 0 || m.y > HARITA_YUKSEKLIK) {
             mermiler.splice(i, 1);
             continue;
         }
 
-        for (let id in aktifOyuncular) {
-            if (id !== m.id) {
-                let target = aktifOyuncular[id];
-                let dist = Math.hypot(target.x - m.x, target.y - m.y);
-
-                if (dist < 25) {
-                    if (!target.godMode) {
-                        target.can -= 20;
-                        if (target.can <= 0) {
-                            let katil = aktifOyuncular[m.id];
-                            if (katil) katil.skor += 1;
-
-                            io.emit('olumBildirimi', `☠️ ${katil ? katil.isim : 'Biri'}, ${target.isim} kişisini avladı!`);
-                            
-                            target.can = 100;
+        for (let pid in aktifOyuncular) {
+            let hedef = aktifOyuncular[pid];
+            if (pid !== m.sahipId) {
+                let mes = Math.hypot(hedef.x - m.x, hedef.y - m.y);
+                if (mes < 20) {
+                    if (!hedef.godMode) {
+                        hedef.can -= 20;
+                        if (hedef.can <= 0) {
+                            io.emit('olumBildirimi', `💀 ${hedef.isim}, ${m.sahipIsim} tarafından avlandı!`);
+                            let avci = aktifOyuncular[m.sahipId];
+                            if (avci) {
+                                avci.skor += 1; 
+                                io.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: `⚔️ ${avci.isim} bir düşman avlayarak 1 Puan kazandı!` });
+                            }
                             let sp = rastgeleSpawnBul();
-                            target.x = sp.x;
-                            target.y = sp.y;
+                            hedef.x = sp.x;
+                            hedef.y = sp.y;
+                            hedef.can = 100;
                         }
                     }
                     mermiler.splice(i, 1);
@@ -820,11 +876,8 @@ setInterval(() => {
         bolgeler: BOLGELER,
         kalanSure: kalanMacSuresi
     });
-}, 1000 / 60);
+}, 1000 / 30);
 
-// Vercel Serverless Desteği
-if (process.env.NODE_ENV !== 'production') {
-    server.listen(PORT, () => console.log(`🚀 Sunucu ${PORT} portunda başarıyla çalışıyor.`));
-}
-
-module.exports = app;
+server.listen(PORT, () => {
+    console.log(`🚀 Sunucu ${PORT} portunda başarıyla başlatıldı!`);
+});
