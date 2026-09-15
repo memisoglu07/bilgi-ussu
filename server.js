@@ -11,19 +11,16 @@ const io = new Server(server, {
     cors: { origin: "*", methods: ["GET", "POST"] }
 });
 
-// Bulut sunucuların dinamik portu (Koyeb / Render / Railway Uyumlu)
 const PORT = process.env.PORT || 3000;
 
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 app.use(bodyParser.json({ limit: '10mb' }));
 
-// Klasördeki statik dosyaları dışarı açma
 app.use(express.static(__dirname));
 app.use('/ses', express.static(path.join(__dirname, 'ses')));
 app.use('/muzik', express.static(path.join(__dirname, 'ses/muzik')));
 app.use('/karakterler', express.static(path.join(__dirname, 'karakterler')));
 
-// Veritabanı Bağlantısı (Bulut Uyumlu + Hata Yakalamalı)
 const db = mysql.createConnection({ 
     host: process.env.DB_HOST || '127.0.0.1', 
     port: process.env.DB_PORT || 8889, 
@@ -277,7 +274,6 @@ io.on('connection', (socket) => {
             p.y = Math.max(30, Math.min(HARITA_YUKSEKLIK - 30, yeniY));
         }
 
-        // Chest toplama kontrolü
         chestler.forEach(chest => {
             if (chest.aktif) {
                 let mesafe = Math.sqrt((p.x - chest.x) ** 2 + (p.y - chest.y) ** 2);
@@ -286,7 +282,6 @@ io.on('connection', (socket) => {
                     let rastgeleSoru = FEN_SORULARI[Math.floor(Math.random() * FEN_SORULARI.length)];
                     socket.emit('soruGoster', { chestId: chest.id, soruData: rastgeleSoru });
                     
-                    // Chest'i 10 saniye sonra tekrar aktif et
                     setTimeout(() => {
                         chest.aktif = true;
                     }, 10000);
@@ -349,20 +344,17 @@ io.on('connection', (socket) => {
     });
 });
 
-// Oyun Motoru Döngüsü (60 FPS)
 setInterval(() => {
     for (let i = mermiler.length - 1; i >= 0; i--) {
         let m = mermiler[i];
         m.x += m.dx;
         m.y += m.dy;
 
-        // Duvar çarpışması
         if (carpismaVarMi(m.x, m.y, 5)) {
             mermiler.splice(i, 1);
             continue;
         }
 
-        // Oyuncu vuruş kontrolü
         let vuruldu = false;
         for (let id in aktifOyuncular) {
             if (id !== m.atanId) {
@@ -394,6 +386,8 @@ setInterval(() => {
         players: aktifOyuncular,
         bullets: mermiler,
         chests: chestler,
+        walls: DUVARLAR,
+        bolgeler: BOLGELER,
         kalanSure: kalanMacSuresi
     });
 }, 1000 / 60);
@@ -654,8 +648,8 @@ app.get('/oyun-alani', (req, res) => {
                 socket.on('arenaGuncelle', (data) => { 
                     oyunVerisi = data; 
                     
-                    let dk = Math.floor(data.kalanSure / 60);
-                    let sn = data.kalanSure % 60;
+                    let dk = Math.floor((data.kalanSure || 0) / 60);
+                    let sn = (data.kalanSure || 0) % 60;
                     let sayacEl = document.getElementById('sayacGosterge');
                     if (sayacEl) {
                         sayacEl.innerText = (dk < 10 ? '0' + dk : dk) + ':' + (sn < 10 ? '0' + sn : sn);
@@ -664,7 +658,7 @@ app.get('/oyun-alani', (req, res) => {
                     let liste = document.getElementById('skorTablosuListesi');
                     if (liste) {
                         liste.innerHTML = '';
-                        let oyuncuDizi = Object.values(data.players).sort((a, b) => b.skor - a.skor);
+                        let oyuncuDizi = Object.values(data.players || {}).sort((a, b) => b.skor - a.skor);
                         oyuncuDizi.slice(0, 5).forEach((p, index) => {
                             let li = document.createElement('li');
                             li.innerHTML = \`\${index + 1}. \${p.isim}: <b style="color:#FFD700;">\${p.skor}⭐</b>\`;
@@ -719,7 +713,7 @@ app.get('/oyun-alani', (req, res) => {
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
                     
                     let benimId = socket.id;
-                    let ben = oyunVerisi.players[benimId];
+                    let ben = oyunVerisi.players && oyunVerisi.players[benimId];
 
                     let kameraX = 0, kameraY = 0;
                     if (ben) {
@@ -730,8 +724,9 @@ app.get('/oyun-alani', (req, res) => {
                     ctx.save();
                     ctx.translate(-kameraX, -kameraY);
 
-                    // Bölgeleri çiz
-                    oyunVerisi.bolgeler.forEach(b => {
+                    // Bölgeleri güvenli çiz
+                    let bolgeler = oyunVerisi.bolgeler || ${JSON.stringify(BOLGELER)};
+                    bolgeler.forEach(b => {
                         ctx.fillStyle = b.renk;
                         ctx.fillRect(b.x, b.y, b.w, b.h);
                         ctx.strokeStyle = 'rgba(255,255,255,0.03)';
@@ -741,32 +736,36 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.fillText(b.isim, b.x + 60, b.y + 80);
                     });
 
-                    // Duvarları çiz
+                    // Duvarları güvenli çiz
+                    let walls = oyunVerisi.walls || ${JSON.stringify(DUVARLAR)};
                     ctx.fillStyle = '#333';
-                    oyunVerisi.walls.forEach(d => {
+                    walls.forEach(d => {
                         ctx.fillRect(d.x, d.y, d.w, d.h);
                         ctx.strokeStyle = '#555';
                         ctx.strokeRect(d.x, d.y, d.w, d.h);
                     });
 
-                    // Chest'leri çiz
-                    oyunVerisi.chests.forEach(c => {
+                    // Chest'leri güvenli çiz
+                    let chests = oyunVerisi.chests || ${JSON.stringify(chestler)};
+                    chests.forEach(c => {
                         if (c.aktif) {
                             ctx.drawImage(chestImg, c.x - 20, c.y - 20, 40, 40);
                         }
                     });
 
-                    // Mermileri çiz
+                    // Mermileri güvenli çiz
+                    let bullets = oyunVerisi.bullets || [];
                     ctx.fillStyle = '#00ffcc';
-                    oyunVerisi.bullets.forEach(m => {
+                    bullets.forEach(m => {
                         ctx.beginPath();
                         ctx.arc(m.x, m.y, 5, 0, Math.PI * 2);
                         ctx.fill();
                     });
 
-                    // Oyuncuları çiz
-                    for (let id in oyunVerisi.players) {
-                        let p = oyunVerisi.players[id];
+                    // Oyuncuları güvenli çiz
+                    let players = oyunVerisi.players || {};
+                    for (let id in players) {
+                        let p = players[id];
                         ctx.save();
                         ctx.translate(p.x, p.y);
 
@@ -797,13 +796,11 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.arc(0, 0, 22, 0, Math.PI * 2);
                         ctx.stroke();
 
-                        // Can Barı
                         ctx.fillStyle = 'red';
                         ctx.fillRect(-25, -35, 50, 6);
                         ctx.fillStyle = 'lime';
                         ctx.fillRect(-25, -35, (p.can / 100) * 50, 6);
 
-                        // İsim
                         ctx.fillStyle = '#fff';
                         ctx.font = 'bold 12px sans-serif';
                         ctx.textAlign = 'center';
