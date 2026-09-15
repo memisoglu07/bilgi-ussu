@@ -7,20 +7,18 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-    cors: { origin: "*", methods: ["GET", "POST"] }
-});
+const io = new Server(server);
 
+// Bulut sunucuların atayacağı dinamik portu yakala (Render/Railway uyumlu)
 const PORT = process.env.PORT || 3000;
 
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 app.use(bodyParser.json({ limit: '10mb' }));
 
-app.use(express.static(__dirname));
-app.use('/ses', express.static(path.join(__dirname, 'ses')));
 app.use('/muzik', express.static(path.join(__dirname, 'ses/muzik')));
-app.use('/karakterler', express.static(path.join(__dirname, 'karakterler')));
+app.use('/karakterler', express.static(path.join(__dirname, '../oyun_projem/karakterler')));
 
+// Veritabanı Bağlantısı (Render/Bulut Uyumlu)
 const db = mysql.createConnection({ 
     host: process.env.DB_HOST || '127.0.0.1', 
     port: process.env.DB_PORT || 8889, 
@@ -29,15 +27,7 @@ const db = mysql.createConnection({
     database: process.env.DB_NAME || 'bilgi_ussu_proje' 
 });
 
-db.connect((err) => {
-    if (err) {
-        console.log("⚠️ Veritabanı bağlantısı sağlanamadı, bellek içi modda devam ediliyor.");
-    } else {
-        console.log("✅ Veritabanı bağlantısı başarılı.");
-    }
-});
-
-const layout = (content, title = "BİLGİ ÜSSÜ - BRAWL ARENA") => `
+const layout = (content, title = "Bilgi Üssü") => `
     <!DOCTYPE html><html><head><title>${title}</title><style>
         body { background:#0a0a0a; color:#FFD700; font-family: 'Segoe UI', sans-serif; margin:0; min-height:100vh; display:flex; justify-content:center; align-items:center; }
         .box { background:linear-gradient(145deg, #1e1e1e, #000); padding:40px; border-radius:20px; border:2px solid #FFD700; width:500px; text-align:center; box-shadow:0 0 40px rgba(255,215,0,0.2); }
@@ -158,22 +148,17 @@ const FEN_SORULARI = [
     { soru: "Halkasıyla bilinen en büyük gaz devi gezegen hangisidir?", secenekler: ["Jüpiter", "Satürn", "Uranüs", "Neptün"], cevap: 1 },
     { soru: "Güneş sisteminin en sıcak gezegeni hangisidir?", secenekler: ["Merkür", "Venüs", "Mars", "Jüpiter"], cevap: 1 },
     { soru: "Üzerinde sıvı su bulunduran ve yaşam olan tek gezegen hangisidir?", secenekler: ["Mars", "Venüs", "Dünya", "Neptün"], cevap: 2 },
-    { soru: "Kızıl Gezegen olarak bilinen gezegen hangisidir?", secenekler: ["Jüpiter", "Mars", "Satürn", "Merkür"], cevap: 1 },
-    { soru: "Güneş sisteminin en büyük gezegeni hangisidir?", secenekler: ["Satürn", "Jüpiter", "Uranüs", "Neptün"], cevap: 1 },
-    { soru: "Güneş'e en uzak olan gezegen hangisidir?", secenekler: ["Uranüs", "Neptün", "Satürn", "Jüpiter"], cevap: 1 },
-    { soru: "Güneş tutulmasında hangi gök cismi ortadadır?", secenekler: ["Dünya", "Güneş", "Ay", "Mars"], cevap: 2 },
-    { soru: "Ay tutulmasında hangi gök cismi ortadadır?", secenekler: ["Ay", "Dünya", "Güneş", "Venüs"], cevap: 1 },
-    { soru: "Güneş tutulması olayı ayın hangi evresinde gerçekleşir?", secenekler: ["Yeni Ay", "Dolunay", "İlk Dördün", "Son Dördün"], cevap: 0 }
+    { soru: "Kızıl Gezegen olarak bilinen gezegen hangisidir?", secenekler: ["Jüpiter", "Mars", "Satürn", "Merkür"], cevap: 1 }
 ];
 
 const HARITA_GENISLIK = 2000;
 const HARITA_YUKSEKLIK = 1500;
 
 const BOLGELER = [
-    { isim: "MAVİ BÖLGE", x: 0, y: 0, w: 1000, h: 750, renk: "rgba(0, 100, 200, 0.04)", yaziRengi: "rgba(0, 120, 255, 0.15)" },
-    { isim: "SARI BÖLGE", x: 1000, y: 0, w: 1000, h: 750, renk: "rgba(200, 180, 0, 0.04)", yaziRengi: "rgba(255, 215, 0, 0.15)" },
-    { isim: "SİYAH BÖLGE", x: 0, y: 750, w: 1000, h: 750, renk: "rgba(30, 30, 30, 0.08)", yaziRengi: "rgba(180, 180, 180, 0.15)" },
-    { isim: "YEŞİL BÖLGE", x: 1000, y: 750, w: 1000, h: 750, renk: "rgba(0, 180, 80, 0.04)", yaziRengi: "rgba(0, 255, 100, 0.15)" }
+    { isim: "TURUNCU BÖLGE", x: 0, y: 0, w: 1000, h: 750, renk: "rgba(255, 140, 0, 0.08)", yaziRengi: "#ff8c00" },
+    { isim: "SİYAH BÖLGE", x: 1000, y: 0, w: 1000, h: 750, renk: "rgba(30, 30, 30, 0.15)", yaziRengi: "#aaaaaa" },
+    { isim: "MAVİ BÖLGE", x: 0, y: 750, w: 1000, h: 750, renk: "rgba(0, 150, 255, 0.08)", yaziRengi: "#0096ff" },
+    { isim: "YEŞİL BÖLGE", x: 1000, y: 750, w: 1000, h: 750, renk: "rgba(0, 255, 100, 0.08)", yaziRengi: "#00ff64" }
 ];
 
 const DUVARLAR = [
@@ -231,197 +216,17 @@ function carpismaVarMi(x, y, yaricap) {
 }
 
 function rastgeleSpawnBul() {
-    const guvenliNoktalar = [
-        { x: 1000, y: 200 }, { x: 1000, y: 1300 },
-        { x: 200, y: 750 }, { x: 1800, y: 750 },
-        { x: 1000, y: 750 }, { x: 500, y: 500 }, { x: 1500, y: 500 }
-    ];
-    let nokta = guvenliNoktalar[Math.floor(Math.random() * guvenliNoktalar.length)];
-    return { x: nokta.x + (Math.random() * 40 - 20), y: nokta.y + (Math.random() * 40 - 20) };
-}
-
-io.on('connection', (socket) => {
-    let isim = socket.handshake.query.isim || 'Savaşçı';
-    let spawn = rastgeleSpawnBul();
-    
-    aktifOyuncular[socket.id] = {
-        x: spawn.x,
-        y: spawn.y,
-        isim: isim,
-        avatar: '',
-        can: 100,
-        skor: 0,
-        renk: '#FFD700',
-        ozelHiz: 6,
-        olumsuzluk: false,
-        gorunmez: false
-    };
-
-    socket.on('avatarGuncelle', (avatarData) => {
-        if (aktifOyuncular[socket.id]) {
-            aktifOyuncular[socket.id].avatar = avatarData;
-        }
-    });
-
-    socket.on('hareketEt', (yon) => {
-        let p = aktifOyuncular[socket.id];
-        if (!p) return;
-        let yeniX = p.x + yon.x;
-        let yeniY = p.y + yon.y;
-        if (!carpismaVarMi(yeniX, yeniY, 20)) {
-            p.x = Math.max(50, Math.min(HARITA_GENISLIK - 50, yeniX));
-            p.y = Math.max(50, Math.min(HARITA_YUKSEKLIK - 50, yeniY));
-        }
-
-        chestler.forEach(chest => {
-            if (chest.aktif) {
-                let mesafe = Math.sqrt((p.x - chest.x) ** 2 + (p.y - chest.y) ** 2);
-                if (mesafe < 40) {
-                    chest.aktif = false;
-                    let rastgeleSoru = FEN_SORULARI[Math.floor(Math.random() * FEN_SORULARI.length)];
-                    socket.emit('soruGoster', { chestId: chest.id, soruData: rastgeleSoru });
-                    
-                    setTimeout(() => {
-                        chest.aktif = true;
-                    }, 10000);
-                }
-            }
-        });
-    });
-
-    socket.on('cevapVer', (veri) => {
-        let p = aktifOyuncular[socket.id];
-        if (!p) return;
-        if (veri.secilenIndex === veri.dogruCevap) {
-            p.skor += 50;
-            p.can = Math.min(100, p.can + 30);
-            socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '🎉 Doğru cevap! +50 Skor ve +30 Can kazandın!' });
-        } else {
-            p.can = Math.max(10, p.can - 20);
-            socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '❌ Yanlış cevap! Canın azaldı.' });
-        }
-    });
-
-    socket.on('atesEt', (hedef) => {
-        let p = aktifOyuncular[socket.id];
-        if (!p) return;
-        let aci = Math.atan2(hedef.y - p.y, hedef.x - p.x);
-        mermiler.push({
-            x: p.x,
-            y: p.y,
-            dx: Math.cos(aci) * 12,
-            dy: Math.sin(aci) * 12,
-            atanId: socket.id,
-            bounceCount: 0
-        });
-    });
-
-    socket.on('chatMesaji', (mesaj) => {
-        let p = aktifOyuncular[socket.id];
-        if (!p) return;
-        io.emit('chatMesajiGelsin', { isim: p.isim, mesaj: mesaj });
-    });
-
-    socket.on('adminKomut', (komut) => {
-        let p = aktifOyuncular[socket.id];
-        if (!p) return;
-        let parcalar = komut.split(' ');
-        let cmd = parcalar[0];
-        let val = parseInt(parcalar[1]) || 10;
-
-        if (cmd === 'god') {
-            p.olumsuzluk = true;
-            setTimeout(() => { p.olumsuzluk = false; }, val * 1000);
-            socket.emit('chatMesajiGelsin', { isim: 'ADMIN', mesaj: `🛡️ ${val} saniye boyunca ölümsüzlük açıldı!` });
-        } else if (cmd === 'speed') {
-            p.ozelHiz = val;
-            socket.emit('chatMesajiGelsin', { isim: 'ADMIN', mesaj: `⚡ Hızın ${val} olarak ayarlandı!` });
-        }
-    });
-
-    socket.on('disconnect', () => {
-        delete aktifOyuncular[socket.id];
-    });
-});
-
-// Mermi ve Sekme Mantığı (7 Kez Sekme)
-setInterval(() => {
-    for (let i = mermiler.length - 1; i >= 0; i--) {
-        let m = mermiler[i];
-        m.x += m.dx;
-        m.y += m.dy;
-
-        let sekmeOldu = false;
-
-        if (m.x <= 40 || m.x >= HARITA_GENISLIK - 40) {
-            m.dx = -m.dx;
-            sekmeOldu = true;
-        }
-        if (m.y <= 40 || m.y >= HARITA_YUKSEKLIK - 40) {
-            m.dy = -m.dy;
-            sekmeOldu = true;
-        }
-
-        if (!sekmeOldu) {
-            for (let d of DUVARLAR) {
-                if (m.x >= d.x && m.x <= d.x + d.w && m.y >= d.y && m.y <= d.y + d.h) {
-                    let carpmaX = Math.abs(m.x - d.x) < 10 || Math.abs(m.x - (d.x + d.w)) < 10;
-                    let carpmaY = Math.abs(m.y - d.y) < 10 || Math.abs(m.y - (d.y + d.h)) < 10;
-                    
-                    if (carpmaX) m.dx = -m.dx;
-                    if (carpmaY) m.dy = -m.dy;
-                    if (!carpmaX && !carpmaY) { m.dx = -m.dx; m.dy = -m.dy; }
-                    
-                    sekmeOldu = true;
-                    break;
-                }
-            }
-        }
-
-        if (sekmeOldu) {
-            m.bounceCount++;
-            if (m.bounceCount >= 7) {
-                mermiler.splice(i, 1);
-                continue;
-            }
-        }
-
-        let vuruldu = false;
-        for (let id in aktifOyuncular) {
-            if (id !== m.atanId) {
-                let o = aktifOyuncular[id];
-                let mesafe = Math.sqrt((m.x - o.x) ** 2 + (m.y - o.y) ** 2);
-                if (mesafe < 22 && !o.olumsuzluk) {
-                    o.can -= 20;
-                    vuruldu = true;
-                    if (o.can <= 0) {
-                        o.can = 100;
-                        let sp = rastgeleSpawnBul();
-                        o.x = sp.x;
-                        o.y = sp.y;
-                        if (aktifOyuncular[m.atanId]) {
-                            aktifOyuncular[m.atanId].skor += 100;
-                            io.emit('olumBildirimi', `⚔️ ${aktifOyuncular[m.atanId].isim}, ${o.isim}'i hakladı!`);
-                        }
-                    }
-                    break;
-                }
-            }
-        }
-        if (vuruldu) {
-            mermiler.splice(i, 1);
+    for (let i = 0; i < 50; i++) {
+        let rx = Math.floor(Math.random() * (HARITA_GENISLIK - 200)) + 100;
+        let ry = Math.floor(Math.random() * (HARITA_YUKSEKLIK - 200)) + 100;
+        if (!carpismaVarMi(rx, ry, 30)) {
+            return { x: rx, y: ry };
         }
     }
+    return { x: 1000, y: 750 };
+}
 
-    io.emit('arenaGuncelle', {
-        players: aktifOyuncular,
-        bullets: mermiler,
-        chests: chestler,
-        walls: DUVARLAR,
-        bolgeler: BOLGELER,
-        kalanSure: kalanMacSuresi
-    });
-}, 1000 / 60);
+const NEON_RENKLER = ['#00ffcc', '#ff00ff', '#00ffff', '#ff5050', '#ffff00', '#ff9900', '#9900ff', '#00ff66'];
 
 app.get('/oyun-alani', (req, res) => {
     res.send(`
@@ -462,7 +267,7 @@ app.get('/oyun-alani', (req, res) => {
             .kill-msg { background: rgba(0, 0, 0, 0.65); border-left: 4px solid #ff4757; color: #fff; padding: 6px 12px; font-size: 13px; font-weight: bold; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
         </style></head><body>
             <div class="ui">⭐ BİLGİ ÜSSÜ FEN BİLİMLERİ ARENA ⭐</div>
-            <div class="bilgi">Hareket: <b>W,A,S,D</b> | Ateş Et: <b>Sol Tık</b> (Mermiler 7 kez seker!) | <a href="/karakter-sec" style="color:#ff4757; text-decoration:none;">Karakter Değiştir</a></div>
+            <div class="bilgi">Hareket: <b>W,A,S,D</b> | Ateş Et: <b>Sol Tık (Mermiler 7 kez seker!)</b> | <a href="/karakter-sec" style="color:#ff4757; text-decoration:none;">Karakter Değiştir</a></div>
             
             <div id="ustPanel">
                 <div class="panelKutusu">
@@ -482,15 +287,15 @@ app.get('/oyun-alani', (req, res) => {
             </div>
 
             <div id="adminSifreModal">
-                <h3>🔒 YÖNETİCİ ŞİFRESİ GEREKLİ</h3>
-                <p style="font-size:12px; color:#aaa;">Hile konsolunu açmak için şifreyi gir:</p>
-                <input type="password" id="sifreInput" placeholder="Şifre" autocomplete="off">
+                <h3>Bakımda</h3>
+                <p style="font-size:12px; color:#aaa;">Bu yerde oyunun geliştiricisine özel mesaj gönderilmesi planlanıyor:</p>
+                <input type="password" id="sifreInput" placeholder="Geliştiriciye Mesaj Gönder" autocomplete="off">
                 <button class="secenekBtn" onclick="sifreyiKontrolEt()" style="background:#ff8c00; color:#000; font-weight:bold;">Giriş Yap</button>
             </div>
 
             <div id="adminKonsol">
                 <h3>⚡ YÖNETİCİ GİZLİ KOMUT KONSOLU</h3>
-                <p>Komutlar: <b>god [saniye]</b> | <b>speed [hız]</b></p>
+                <p>Komutlar: <b>god [saniye]</b> | <b>speed [hız]</b> | <b>invisibility [saniye]</b></p>
                 <input type="text" id="adminInput" placeholder="Komut yaz ve Enter'a bas" autocomplete="off">
             </div>
 
@@ -515,12 +320,6 @@ app.get('/oyun-alani', (req, res) => {
                 muzik.loop = true;
                 muzik.volume = 0.4;
                 
-                window.addEventListener('click', () => {
-                    if(muzik.paused && sessionStorage.getItem('muzikPlaying') !== 'false') {
-                        muzik.play().catch(e => console.log("Müzik çalma bekleniyor"));
-                    }
-                }, { once: true });
-
                 window.onload = () => {
                     muzik.currentTime = parseFloat(sessionStorage.getItem('muzikTime')) || 0;
                     if(sessionStorage.getItem('muzikPlaying') === 'true') {
@@ -532,18 +331,16 @@ app.get('/oyun-alani', (req, res) => {
                 function oynat(dosyaAdi) { 
                     muzik.src = '/muzik/' + dosyaAdi; 
                     sessionStorage.setItem('muzikSrc', '/muzik/' + dosyaAdi); 
-                    muzik.play().then(() => {
-                        sessionStorage.setItem('muzikPlaying', 'true');
-                        document.getElementById('sesIkona').innerText = '🔊';
-                    }).catch(e => alert("Müzik dosyası yüklenemedi. 'ses/muzik/' klasöründe dosya olduğundan emin olun."));
+                    muzik.play(); 
+                    sessionStorage.setItem('muzikPlaying', 'true'); 
+                    document.getElementById('sesIkona').innerText = '🔊';
                 }
 
                 function toggleMuzik() {
                     if(muzik.paused) { 
-                        muzik.play().then(() => {
-                            sessionStorage.setItem('muzikPlaying', 'true'); 
-                            document.getElementById('sesIkona').innerText = '🔊'; 
-                        });
+                        muzik.play(); 
+                        sessionStorage.setItem('muzikPlaying', 'true'); 
+                        document.getElementById('sesIkona').innerText = '🔊'; 
                     } else { 
                         muzik.pause(); 
                         sessionStorage.setItem('muzikPlaying', 'false'); 
@@ -554,7 +351,7 @@ app.get('/oyun-alani', (req, res) => {
                 const isim = sessionStorage.getItem('oyuncuIsim') || 'Savaşçı';
                 const benimAvatarim = sessionStorage.getItem('oyuncuAvatar') || '';
 
-                const socket = io({ query: { isim: isim }, forceNew: true, transports: ['websocket', 'polling'] });
+                const socket = io({ query: { isim: isim }, forceNew: true });
                 socket.on('connect', () => { socket.emit('avatarGuncelle', benimAvatarim); });
 
                 const canvas = document.getElementById('arena');
@@ -687,8 +484,8 @@ app.get('/oyun-alani', (req, res) => {
                 socket.on('arenaGuncelle', (data) => { 
                     oyunVerisi = data; 
                     
-                    let dk = Math.floor((data.kalanSure || 0) / 60);
-                    let sn = (data.kalanSure || 0) % 60;
+                    let dk = Math.floor(data.kalanSure / 60);
+                    let sn = data.kalanSure % 60;
                     let sayacEl = document.getElementById('sayacGosterge');
                     if (sayacEl) {
                         sayacEl.innerText = (dk < 10 ? '0' + dk : dk) + ':' + (sn < 10 ? '0' + sn : sn);
@@ -697,7 +494,7 @@ app.get('/oyun-alani', (req, res) => {
                     let liste = document.getElementById('skorTablosuListesi');
                     if (liste) {
                         liste.innerHTML = '';
-                        let oyuncuDizi = Object.values(data.players || {}).sort((a, b) => b.skor - a.skor);
+                        let oyuncuDizi = Object.values(data.players).sort((a, b) => b.skor - a.skor);
                         oyuncuDizi.slice(0, 5).forEach((p, index) => {
                             let li = document.createElement('li');
                             li.innerHTML = \`\${index + 1}. \${p.isim}: <b style="color:#FFD700;">\${p.skor}⭐</b>\`;
@@ -752,114 +549,107 @@ app.get('/oyun-alani', (req, res) => {
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
                     
                     let benimId = socket.id;
-                    let ben = oyunVerisi.players && oyunVerisi.players[benimId];
+                    let ben = oyunVerisi.players[benimId];
 
                     let kameraX = 0, kameraY = 0;
                     if (ben) {
                         kameraX = Math.max(0, Math.min(ben.x - canvas.width / 2, ${HARITA_GENISLIK} - canvas.width));
-                        kameraY = Math.max(0, Math.min(ben.y - canvas.height / 2, ${HARITA_YUKSEKLIK} - canvas.height));
+                        kameraY = Math.max(0, Math.min(ben.y - canvas.height / 2, 1500 - canvas.height));
                     }
 
                     ctx.save();
                     ctx.translate(-kameraX, -kameraY);
 
-                    // Harita Bölgeleri
-                    let bolgeler = oyunVerisi.bolgeler || ${JSON.stringify(BOLGELER)};
-                    bolgeler.forEach(b => {
+                    // Harita Arka Planı
+                    ctx.fillStyle = '#1e1e1e';
+                    ctx.fillRect(0, 0, ${HARITA_GENISLIK}, ${HARITA_YUKSEKLIK});
+
+                    // Bölgeleri Çiz
+                    for (let b of oyunVerisi.bolgeler) {
                         ctx.fillStyle = b.renk;
                         ctx.fillRect(b.x, b.y, b.w, b.h);
-                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
-                        ctx.lineWidth = 2;
+                        
+                        ctx.strokeStyle = b.yaziRengi;
+                        ctx.lineWidth = 1;
                         ctx.strokeRect(b.x, b.y, b.w, b.h);
+
                         ctx.fillStyle = b.yaziRengi;
-                        ctx.font = 'bold 32px sans-serif';
-                        ctx.fillText(b.isim, b.x + 50, b.y + 70);
-                    });
+                        ctx.font = 'bold 24px Segoe UI';
+                        ctx.textAlign = 'center';
+                        ctx.fillText("📍 " + b.isim, b.x + b.w / 2, b.y + 50);
+                    }
 
-                    // Duvarlar
-                    let walls = oyunVerisi.walls || ${JSON.stringify(DUVARLAR)};
-                    ctx.fillStyle = '#222';
-                    walls.forEach(d => {
+                    // Duvarları Çiz
+                    for (let d of oyunVerisi.walls) {
+                        ctx.fillStyle = '#2c3e50';
                         ctx.fillRect(d.x, d.y, d.w, d.h);
-                        ctx.strokeStyle = '#383838';
+                        ctx.strokeStyle = '#FFD700';
+                        ctx.lineWidth = 2;
                         ctx.strokeRect(d.x, d.y, d.w, d.h);
-                    });
+                    }
 
-                    // Chestler
-                    let chests = oyunVerisi.chests || ${JSON.stringify(chestler)};
-                    chests.forEach(c => {
-                        if (c.aktif && chestImg.complete) {
+                    // Sandıkları Çiz
+                    for (let c of oyunVerisi.chests) {
+                        if (!c.aktif) continue;
+                        if (chestImg.complete && chestImg.naturalWidth !== 0) {
                             ctx.drawImage(chestImg, c.x - 20, c.y - 20, 40, 40);
+                        } else {
+                            ctx.fillStyle = '#FFD700';
+                            ctx.fillRect(c.x - 15, c.y - 15, 30, 30);
                         }
-                    });
+                    }
 
-                    // Mermiler
-                    let bullets = oyunVerisi.bullets || [];
-                    ctx.fillStyle = '#00ffcc';
-                    bullets.forEach(m => {
+                    // Mermileri Çiz
+                    for (let m of oyunVerisi.bullets) {
+                        ctx.fillStyle = '#ff4757';
                         ctx.beginPath();
-                        ctx.arc(m.x, m.y, 5, 0, Math.PI * 2);
+                        ctx.arc(m.x, m.y, 6, 0, Math.PI * 2);
                         ctx.fill();
-                    });
+                        ctx.strokeStyle = '#fff';
+                        ctx.stroke();
+                    }
 
-                    // Oyuncular ve Karakter Avatarları
-                    let players = oyunVerisi.players || {};
-                    for (let id in players) {
-                        let p = players[id];
+                    // Oyuncuları Çiz
+                    for (let id in oyunVerisi.players) {
+                        let p = oyunVerisi.players[id];
+                        if (p.gizli && id !== benimId) continue;
+
                         ctx.save();
                         ctx.translate(p.x, p.y);
 
-                        // Taban Çember
-                        ctx.fillStyle = '#1e1e1e';
-                        ctx.beginPath();
-                        ctx.arc(0, 0, 22, 0, Math.PI * 2);
-                        ctx.fill();
-
-                        // Oyuncu Özel Avatarı (Canvas'tan gelen çizim/resim)
-                        if (p.avatar && p.avatar.startsWith('data:image')) {
+                        if (p.avatar) {
                             if (!loadedImages[id]) {
-                                let img = new Image();
-                                img.src = p.avatar;
-                                loadedImages[id] = img;
+                                loadedImages[id] = new Image();
+                                loadedImages[id].src = p.avatar;
                             }
-                            if (loadedImages[id].complete && loadedImages[id].naturalWidth !== 0) {
-                                ctx.save();
-                                ctx.beginPath();
-                                ctx.arc(0, 0, 20, 0, Math.PI * 2);
-                                ctx.clip();
-                                ctx.drawImage(loadedImages[id], -20, -20, 40, 40);
-                                ctx.restore();
-                            } else {
-                                ctx.fillStyle = '#ff4757';
-                                ctx.beginPath();
-                                ctx.arc(0, 0, 20, 0, Math.PI * 2);
-                                ctx.fill();
-                            }
+                            ctx.save();
+                            ctx.beginPath();
+                            ctx.arc(0, 0, 20, 0, Math.PI * 2);
+                            ctx.clip();
+                            ctx.drawImage(loadedImages[id], -20, -20, 40, 40);
+                            ctx.restore();
                         } else {
-                            ctx.fillStyle = '#ff4757';
+                            ctx.fillStyle = p.renk || '#00ffcc';
                             ctx.beginPath();
                             ctx.arc(0, 0, 20, 0, Math.PI * 2);
                             ctx.fill();
                         }
 
-                        // Altın Çerçeve
-                        ctx.strokeStyle = '#FFD700';
+                        ctx.strokeStyle = p.godMode ? '#00ffff' : '#FFD700';
                         ctx.lineWidth = 3;
                         ctx.beginPath();
-                        ctx.arc(0, 0, 22, 0, Math.PI * 2);
+                        ctx.arc(0, 0, 20, 0, Math.PI * 2);
                         ctx.stroke();
 
-                        // Can Barı
-                        ctx.fillStyle = 'red';
-                        ctx.fillRect(-25, -34, 50, 5);
-                        ctx.fillStyle = 'lime';
-                        ctx.fillRect(-25, -34, Math.max(0, (p.can / 100) * 50), 5);
+                        ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
+                        ctx.fillRect(-20, -32, 40, 5);
+                        ctx.fillStyle = '#00ff64';
+                        ctx.fillRect(-20, -32, (Math.max(0, p.can) / 100) * 40, 5);
 
-                        // İsim Etiketi
                         ctx.fillStyle = '#fff';
-                        ctx.font = 'bold 12px sans-serif';
+                        ctx.font = 'bold 12px Segoe UI';
                         ctx.textAlign = 'center';
-                        ctx.fillText(p.isim, 0, -44);
+                        ctx.fillText(p.isim, 0, -38);
 
                         ctx.restore();
                     }
@@ -871,6 +661,198 @@ app.get('/oyun-alani', (req, res) => {
     `);
 });
 
+io.on('connection', (socket) => {
+    let oyuncuIsim = socket.handshake.query.isim || 'Savaşçı';
+    let spawn = rastgeleSpawnBul();
+
+    aktifOyuncular[socket.id] = {
+        id: socket.id,
+        isim: oyuncuIsim,
+        x: spawn.x,
+        y: spawn.y,
+        can: 100,
+        skor: 0,
+        oldurmeSayisi: 0,
+        renk: NEON_RENKLER[Math.floor(Math.random() * NEON_RENKLER.length)],
+        avatar: null,
+        ozelHiz: 6,
+        godMode: false,
+        gizli: false
+    };
+
+    socket.on('avatarGuncelle', (avatarData) => {
+        if (aktifOyuncular[socket.id]) {
+            aktifOyuncular[socket.id].avatar = avatarData;
+        }
+    });
+
+    socket.on('hareketEt', (data) => {
+        let p = aktifOyuncular[socket.id];
+        if (!p) return;
+
+        let yeniX = p.x + data.x;
+        let yeniY = p.y + data.y;
+
+        if (yeniX >= 20 && yeniX <= HARITA_GENISLIK - 20 && !carpismaVarMi(yeniX, p.y, 20)) {
+            p.x = yeniX;
+        }
+        if (yeniY >= 20 && yeniY <= HARITA_YUKSEKLIK - 20 && !carpismaVarMi(p.x, yeniY, 20)) {
+            p.y = yeniY;
+        }
+
+        for (let c of chestler) {
+            if (c.aktif) {
+                let dist = Math.hypot(p.x - c.x, p.y - c.y);
+                if (dist < 35) {
+                    c.aktif = false;
+                    let rastgeleSoru = FEN_SORULARI[Math.floor(Math.random() * FEN_SORULARI.length)];
+                    socket.emit('soruGoster', { chestId: c.id, soruData: rastgeleSoru });
+
+                    setTimeout(() => { c.aktif = true; }, 15000);
+                    break;
+                }
+            }
+        }
+    });
+
+    socket.on('cevapVer', (data) => {
+        let p = aktifOyuncular[socket.id];
+        if (!p) return;
+
+        if (data.secilenIndex === data.dogruCevap) {
+            p.skor += 5; // Soru çözünce 5 puan
+            p.can = Math.min(100, p.can + 100);
+            socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '🎉 Tebrikler Doğru Cevap! 5 Puan Kazandın ve Canını Fulledin.' });
+        } else {
+            socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '❌ Üzgünüm Yanlış Cevap!' });
+        }
+    });
+
+    socket.on('atesEt', (data) => {
+        let p = aktifOyuncular[socket.id];
+        if (!p) return;
+
+        let aci = Math.atan2(data.y - p.y, data.x - p.x);
+        mermiler.push({
+            id: Math.random().toString(),
+            sahipId: socket.id,
+            sahipIsim: p.isim,
+            x: p.x,
+            y: p.y,
+            vx: Math.cos(aci) * 12,
+            vy: Math.sin(aci) * 12,
+            menzil: 150,
+            sekmeSayisi: 7 // 7 kez sekme hakkı
+        });
+    });
+
+    socket.on('chatMesaji', (msg) => {
+        let p = aktifOyuncular[socket.id];
+        if (p) {
+            io.emit('chatMesajiGelsin', { isim: p.isim, mesaj: msg });
+        }
+    });
+
+    socket.on('adminKomut', (komut) => {
+        let p = aktifOyuncular[socket.id];
+        if (!p) return;
+        let parcalar = komut.split(' ');
+        let cmd = parcalar[0].toLowerCase();
+        let val = parseInt(parcalar[1]) || 10;
+
+        if (cmd === 'god') {
+            p.godMode = true;
+            setTimeout(() => { p.godMode = false; }, val * 1000);
+        } else if (cmd === 'speed') {
+            p.ozelHiz = val;
+            setTimeout(() => { p.ozelHiz = 6; }, 10000);
+        } else if (cmd === 'invisibility') {
+            p.gizli = true;
+            setTimeout(() => { p.gizli = false; }, val * 1000);
+        }
+    });
+
+    socket.on('disconnect', () => {
+        delete aktifOyuncular[socket.id];
+    });
+});
+
+setInterval(() => {
+    for (let i = mermiler.length - 1; i >= 0; i--) {
+        let m = mermiler[i];
+        
+        let sonrakiX = m.x + m.vx;
+        let sonrakiY = m.y + m.vy;
+
+        // Duvar Çarpışması ve Sekme Mantığı (7 kez sekme)
+        let duvaraCarpti = false;
+        for (let d of DUVARLAR) {
+            if (sonrakiX >= d.x && sonrakiX <= d.x + d.w && sonrakiY >= d.y && sonrakiY <= d.y + d.h) {
+                duvaraCarpti = true;
+                let xIcineGirdi = (m.x < d.x || m.x > d.x + d.w);
+                let yIcineGirdi = (m.y < d.y || m.y > d.y + d.h);
+                
+                if (xIcineGirdi) m.vx *= -1;
+                if (yIcineGirdi) m.vy *= -1;
+                if (!xIcineGirdi && !yIcineGirdi) { m.vx *= -1; m.vy *= -1; }
+                break;
+            }
+        }
+
+        if (duvaraCarpti) {
+            m.sekmeSayisi--;
+            if (m.sekmeSayisi <= 0) {
+                mermiler.splice(i, 1);
+                continue;
+            }
+        } else {
+            m.x = sonrakiX;
+            m.y = sonrakiY;
+        }
+
+        m.menzil--;
+        if (m.menzil <= 0 || m.x < 0 || m.x > HARITA_GENISLIK || m.y < 0 || m.y > HARITA_YUKSEKLIK) {
+            mermiler.splice(i, 1);
+            continue;
+        }
+
+        for (let pid in aktifOyuncular) {
+            let hedef = aktifOyuncular[pid];
+            if (pid !== m.sahipId) {
+                let mes = Math.hypot(hedef.x - m.x, hedef.y - m.y);
+                if (mes < 20) {
+                    if (!hedef.godMode) {
+                        hedef.can -= 20;
+                        if (hedef.can <= 0) {
+                            io.emit('olumBildirimi', `💀 ${hedef.isim}, ${m.sahipIsim} tarafından avlandı!`);
+                            let avci = aktifOyuncular[m.sahipId];
+                            if (avci) {
+                                avci.skor += 1; // Adam öldürünce 1 puan
+                                io.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: `⚔️ ${avci.isim} bir düşman avlayarak 1 Puan kazandı!` });
+                            }
+                            let sp = rastgeleSpawnBul();
+                            hedef.x = sp.x;
+                            hedef.y = sp.y;
+                            hedef.can = 100;
+                        }
+                    }
+                    mermiler.splice(i, 1);
+                    break;
+                }
+            }
+        }
+    }
+
+    io.emit('arenaGuncelle', {
+        players: aktifOyuncular,
+        bullets: mermiler,
+        walls: DUVARLAR,
+        chests: chestler,
+        bolgeler: BOLGELER,
+        kalanSure: kalanMacSuresi
+    });
+}, 1000 / 30);
+
 server.listen(PORT, () => {
-    console.log(`🚀 Savaş Arenası ${PORT} portunda başarıyla çalışıyor!`);
+    console.log(`🚀 Sunucu ${PORT} portunda başarıyla başlatıldı!`);
 });
