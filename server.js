@@ -170,10 +170,10 @@ const HARITA_GENISLIK = 2000;
 const HARITA_YUKSEKLIK = 1500;
 
 const BOLGELER = [
-    { isim: "TURUNCU BÖLGE", x: 0, y: 0, w: 1000, h: 750, renk: "rgba(255, 140, 0, 0.08)", yaziRengi: "#ff8c00" },
-    { isim: "SİYAH BÖLGE", x: 1000, y: 0, w: 1000, h: 750, renk: "rgba(30, 30, 30, 0.15)", yaziRengi: "#aaaaaa" },
-    { isim: "MAVİ BÖLGE", x: 0, y: 750, w: 1000, h: 750, renk: "rgba(0, 150, 255, 0.08)", yaziRengi: "#0096ff" },
-    { isim: "YEŞİL BÖLGE", x: 1000, y: 750, w: 1000, h: 750, renk: "rgba(0, 255, 100, 0.08)", yaziRengi: "#00ff64" }
+    { isim: "TURUNCU BÖLGE", x: 0, y: 0, w: 1000, h: 750, renk: "rgba(255, 140, 0, 0.05)", yaziRengi: "rgba(255, 140, 0, 0.2)" },
+    { isim: "SİYAH BÖLGE", x: 1000, y: 0, w: 1000, h: 750, renk: "rgba(30, 30, 30, 0.1)", yaziRengi: "rgba(170, 170, 170, 0.2)" },
+    { isim: "MAVİ BÖLGE", x: 0, y: 750, w: 1000, h: 750, renk: "rgba(0, 150, 255, 0.05)", yaziRengi: "rgba(0, 150, 255, 0.2)" },
+    { isim: "YEŞİL BÖLGE", x: 1000, y: 750, w: 1000, h: 750, renk: "rgba(0, 255, 100, 0.05)", yaziRengi: "rgba(0, 255, 100, 0.2)" }
 ];
 
 const DUVARLAR = [
@@ -231,14 +231,14 @@ function carpismaVarMi(x, y, yaricap) {
 }
 
 function rastgeleSpawnBul() {
-    for (let i = 0; i < 50; i++) {
-        let rx = Math.floor(Math.random() * (HARITA_GENISLIK - 200)) + 100;
-        let ry = Math.floor(Math.random() * (HARITA_YUKSEKLIK - 200)) + 100;
-        if (!carpismaVarMi(rx, ry, 30)) {
-            return { x: rx, y: ry };
-        }
-    }
-    return { x: 1000, y: 750 };
+    // Güvenli açık alanlar (Duvarların olmadığı merkezî koridorlar)
+    const guvenliNoktalar = [
+        { x: 1000, y: 200 }, { x: 1000, y: 1300 },
+        { x: 200, y: 750 }, { x: 1800, y: 750 },
+        { x: 1000, y: 750 }, { x: 500, y: 500 }, { x: 1500, y: 500 }
+    ];
+    let nokta = guvenliNoktalar[Math.floor(Math.random() * guvenliNoktalar.length)];
+    return { x: nokta.x + (Math.random() * 40 - 20), y: nokta.y + (Math.random() * 40 - 20) };
 }
 
 io.on('connection', (socket) => {
@@ -270,8 +270,8 @@ io.on('connection', (socket) => {
         let yeniX = p.x + yon.x;
         let yeniY = p.y + yon.y;
         if (!carpismaVarMi(yeniX, yeniY, 20)) {
-            p.x = Math.max(30, Math.min(HARITA_GENISLIK - 30, yeniX));
-            p.y = Math.max(30, Math.min(HARITA_YUKSEKLIK - 30, yeniY));
+            p.x = Math.max(50, Math.min(HARITA_GENISLIK - 50, yeniX));
+            p.y = Math.max(50, Math.min(HARITA_YUKSEKLIK - 50, yeniY));
         }
 
         chestler.forEach(chest => {
@@ -312,7 +312,8 @@ io.on('connection', (socket) => {
             y: p.y,
             dx: Math.cos(aci) * 12,
             dy: Math.sin(aci) * 12,
-            atanId: socket.id
+            atanId: socket.id,
+            bounceCount: 0
         });
     });
 
@@ -344,15 +345,49 @@ io.on('connection', (socket) => {
     });
 });
 
+// Mermi ve Sekme Mantığı (7 Kez Sekme)
 setInterval(() => {
     for (let i = mermiler.length - 1; i >= 0; i--) {
         let m = mermiler[i];
         m.x += m.dx;
         m.y += m.dy;
 
-        if (carpismaVarMi(m.x, m.y, 5)) {
-            mermiler.splice(i, 1);
-            continue;
+        let sekmeOldu = false;
+
+        // Harita kenarlarından sekme
+        if (m.x <= 40 || m.x >= HARITA_GENISLIK - 40) {
+            m.dx = -m.dx;
+            sekmeOldu = true;
+        }
+        if (m.y <= 40 || m.y >= HARITA_YUKSEKLIK - 40) {
+            m.dy = -m.dy;
+            sekmeOldu = true;
+        }
+
+        // İç duvarlardan sekme
+        if (!sekmeOldu) {
+            for (let d of DUVARLAR) {
+                if (m.x >= d.x && m.x <= d.x + d.w && m.y >= d.y && m.y <= d.y + d.h) {
+                    // Çarpışma yönüne göre ters çevir
+                    let carpmaX = Math.abs(m.x - d.x) < 10 || Math.abs(m.x - (d.x + d.w)) < 10;
+                    let carpmaY = Math.abs(m.y - d.y) < 10 || Math.abs(m.y - (d.y + d.h)) < 10;
+                    
+                    if (carpmaX) m.dx = -m.dx;
+                    if (carpmaY) m.dy = -m.dy;
+                    if (!carpmaX && !carpmaY) { m.dx = -m.dx; m.dy = -m.dy; }
+                    
+                    sekmeOldu = true;
+                    break;
+                }
+            }
+        }
+
+        if (sekmeOldu) {
+            m.bounceCount++;
+            if (m.bounceCount >= 7) {
+                mermiler.splice(i, 1);
+                continue;
+            }
         }
 
         let vuruldu = false;
@@ -431,7 +466,7 @@ app.get('/oyun-alani', (req, res) => {
             .kill-msg { background: rgba(0, 0, 0, 0.65); border-left: 4px solid #ff4757; color: #fff; padding: 6px 12px; font-size: 13px; font-weight: bold; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
         </style></head><body>
             <div class="ui">⭐ BİLGİ ÜSSÜ FEN BİLİMLERİ ARENA ⭐</div>
-            <div class="bilgi">Hareket: <b>W,A,S,D</b> | Ateş Et: <b>Sol Tık</b> | <a href="/karakter-sec" style="color:#ff4757; text-decoration:none;">Karakter Değiştir</a></div>
+            <div class="bilgi">Hareket: <b>W,A,S,D</b> | Ateş Et: <b>Sol Tık</b> (Mermiler 7 kez seker!) | <a href="/karakter-sec" style="color:#ff4757; text-decoration:none;">Karakter Değiştir</a></div>
             
             <div id="ustPanel">
                 <div class="panelKutusu">
@@ -479,11 +514,18 @@ app.get('/oyun-alani', (req, res) => {
             
             <script src="/socket.io/socket.io.js"></script>
             <script>
+                // Müzik Başlatma ve Yönetimi (Autoplay politikalarına uygun)
                 let muzik = window.muzik || new Audio(sessionStorage.getItem('muzikSrc') || '/muzik/pixel-drift.mp3');
                 window.muzik = muzik;
                 muzik.loop = true;
                 muzik.volume = 0.4;
                 
+                window.addEventListener('click', () => {
+                    if(muzik.paused && sessionStorage.getItem('muzikPlaying') !== 'false') {
+                        muzik.play().catch(e => console.log("Müzik çalma bekleniyor"));
+                    }
+                }, { once: true });
+
                 window.onload = () => {
                     muzik.currentTime = parseFloat(sessionStorage.getItem('muzikTime')) || 0;
                     if(sessionStorage.getItem('muzikPlaying') === 'true') {
@@ -495,16 +537,18 @@ app.get('/oyun-alani', (req, res) => {
                 function oynat(dosyaAdi) { 
                     muzik.src = '/muzik/' + dosyaAdi; 
                     sessionStorage.setItem('muzikSrc', '/muzik/' + dosyaAdi); 
-                    muzik.play(); 
-                    sessionStorage.setItem('muzikPlaying', 'true'); 
-                    document.getElementById('sesIkona').innerText = '🔊';
+                    muzik.play().then(() => {
+                        sessionStorage.setItem('muzikPlaying', 'true');
+                        document.getElementById('sesIkona').innerText = '🔊';
+                    }).catch(e => alert("Müzik dosyası yüklenemedi. 'ses/muzik/' klasöründe dosya olduğundan emin olun."));
                 }
 
                 function toggleMuzik() {
                     if(muzik.paused) { 
-                        muzik.play(); 
-                        sessionStorage.setItem('muzikPlaying', 'true'); 
-                        document.getElementById('sesIkona').innerText = '🔊'; 
+                        muzik.play().then(() => {
+                            sessionStorage.setItem('muzikPlaying', 'true'); 
+                            document.getElementById('sesIkona').innerText = '🔊'; 
+                        });
                     } else { 
                         muzik.pause(); 
                         sessionStorage.setItem('muzikPlaying', 'false'); 
@@ -724,7 +768,7 @@ app.get('/oyun-alani', (req, res) => {
                     ctx.save();
                     ctx.translate(-kameraX, -kameraY);
 
-                    // Bölgeleri güvenli çiz
+                    // Bölgeleri çiz
                     let bolgeler = oyunVerisi.bolgeler || ${JSON.stringify(BOLGELER)};
                     bolgeler.forEach(b => {
                         ctx.fillStyle = b.renk;
@@ -736,7 +780,7 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.fillText(b.isim, b.x + 60, b.y + 80);
                     });
 
-                    // Duvarları güvenli çiz
+                    // Duvarları çiz
                     let walls = oyunVerisi.walls || ${JSON.stringify(DUVARLAR)};
                     ctx.fillStyle = '#333';
                     walls.forEach(d => {
@@ -745,7 +789,7 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.strokeRect(d.x, d.y, d.w, d.h);
                     });
 
-                    // Chest'leri güvenli çiz
+                    // Chest'leri çiz
                     let chests = oyunVerisi.chests || ${JSON.stringify(chestler)};
                     chests.forEach(c => {
                         if (c.aktif) {
@@ -753,7 +797,7 @@ app.get('/oyun-alani', (req, res) => {
                         }
                     });
 
-                    // Mermileri güvenli çiz
+                    // Mermileri çiz
                     let bullets = oyunVerisi.bullets || [];
                     ctx.fillStyle = '#00ffcc';
                     bullets.forEach(m => {
@@ -762,7 +806,7 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.fill();
                     });
 
-                    // Oyuncuları güvenli çiz
+                    // Oyuncuları çiz
                     let players = oyunVerisi.players || {};
                     for (let id in players) {
                         let p = players[id];
