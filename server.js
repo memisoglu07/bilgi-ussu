@@ -58,7 +58,7 @@ app.get('/', (req, res) => res.send(layout(`
 
 app.get('/karakter-sec', (req, res) => {
     res.send(`
-        <!DOCTYPE html><html><head><title>Karakter Tasarımı</title><style>
+        <!DOCTYPE html><html><head><title>Kostüm Yap!</title><style>
             body { background:#0a0a0a; color:#FFD700; font-family:'Segoe UI', sans-serif; margin:0; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; }
             .box { background:linear-gradient(145deg, #1e1e1e, #000); padding:25px; border-radius:20px; border:2px solid #FFD700; width:420px; text-align:center; box-shadow:0 0 30px rgba(255,215,0,0.2); }
             input[type="text"], input[type="file"], input[type="color"] { width: 100%; padding: 8px; margin: 6px 0; border-radius: 8px; border: 1px solid #444; background: #111; color: #fff; box-sizing: border-box; text-align: center; font-size: 14px; }
@@ -206,7 +206,11 @@ const FEN_SORULARI = [
     { soru: "Aşağıdaki gök cisimlerinden hangisi bir gezegen değildir?", secenekler: ["Uranüs", "Plüton (Cüce gezegen)", "Neptün", "Satürn"], cevap: 1 },
     { soru: "Güneş tutulması hangi zaman diliminde gerçekleşir?", secenekler: ["Gece vaktinde", "Gündüz vaktinde", "Akşamüstü", "Gece yarısı"], cevap: 1 },
     { soru: "Ay tutulması hangi zaman diliminde gerçekleşir?", secenekler: ["Gündüz vaktinde", "Gece vaktinde", "Öğle vaktinde", "Sabah gün doğumunda"], cevap: 1 },
-    { soru: "Güneş tutulmasında Ay'ın gölgesi nereye düşer?", secenekler: ["Güneş'in üzerine", "Dünya'nın belirli bir bölümünün üzerine", "Uzay boşluğuna", "Mars'ın üzerine"], cevap: 1 }
+    { soru: "Güneş tutulmasında Ay'ın gölgesi nereye düşer?", secenekler: ["Güneş'in üzerine", "Dünya'nın belirli bir bölümünün üzerine", "Uzay boşluğuna", "Mars'ın üzerine"], cevap: 1 },
+    { soru: "Titanın Kütlesi Nedir?", secenekler: ["1,345 × 10²³", "2", "Titan", "e=mc2"], cevap: 0 },
+    { soru: "Güneş Nereden Doğar?", secenekler: ["Annesinden", "Batıdan", "Doğudan", "Güneyden"], cevap: 2 },
+    { soru: "Hangi Gezegene Seher Yıldızı Denir?", secenekler: ["Venüs", "Seher Yıldızı", "Merkür", "Mars"], cevap: 0 },
+    { soru: "Plüton ne zaman cüce gezegen oldu?", secenekler: ["24 Ağustos", "30 Ağustos", "23 Nisan", "10 Kasım"], cevap: 0 },
 ];
 
 
@@ -257,7 +261,7 @@ setInterval(() => {
             aktifOyuncular[id].x = sp.x;
             aktifOyuncular[id].y = sp.y;
         }
-        io.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '🏁 Maç süresi bitti! Skorlar sıfırlandı, yeni maç başladı!' });
+        io.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '🏁 Maç bitti! Skorlar sıfırlandı, yeni maç başladı!' });
     }
 }, 1000);
 
@@ -289,7 +293,7 @@ const NEON_RENKLER = ['#00ffcc', '#ff00ff', '#00ffff', '#ff5050', '#ffff00', '#f
 
 app.get('/oyun-alani', (req, res) => {
     res.send(`
-        <!DOCTYPE html><html><head><title>Fen Bilimleri Chest Arena</title><style>
+        <!DOCTYPE html><html><head><title>☠️Bilgi Üssü☠️</title><style>
             body { background:#0f0f0f; color:#fff; margin:0; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; font-family:sans-serif; overflow:hidden; }
             canvas { background:#181818; border:4px solid #FFD700; box-shadow:0 0 30px rgba(255,215,0,0.4); cursor: crosshair; }
             .ui { margin-bottom:4px; font-size:16px; color:#FFD700; font-weight:bold; }
@@ -340,14 +344,14 @@ app.get('/oyun-alani', (req, res) => {
 
             <div id="muzikPaneli">
                 <span id="sesIkona" style="cursor:pointer; font-size:18px;" onclick="toggleMuzik()" title="Sesi Aç/Kapat">🔊</span>
-                <button onclick="oynat('pixel-drift.mp3')">Pixel Drift</button>
-                <button onclick="oynat('asphalt-menace.mp3')">Asphalt Menace</button>
-                <button onclick="oynat('cybernetic-assault.mp3')">Cybernetic Assault</button>
+                <button onclick="play('pixel-drift.mp3')">Pixel Drift</button>
+                <button onclick="play('asphalt-menace.mp3')">Asphalt Menace</button>
+                <button onclick="play('cybernetic-assault.mp3')">Cybernetic Assault</button>
             </div>
 
             <div id="adminSifreModal">
-                <h3>🔒 YÖNETİCİ ŞİFRESİ GEREKLİ</h3>
-                <p style="font-size:12px; color:#aaa;">Hile konsolunu açmak için şifreyi gir:</p>
+                <h3>Daha Sonra Eklenecek</h3>
+                <p style="font-size:12px; color:#aaa;">Yöne:</p>
                 <input type="password" id="sifreInput" placeholder="Şifre" autocomplete="off">
                 <button class="secenekBtn" onclick="sifreyiKontrolEt()" style="background:#ff8c00; color:#000; font-weight:bold;">Giriş Yap</button>
             </div>
@@ -464,7 +468,7 @@ app.get('/oyun-alani', (req, res) => {
 
                 function sifreyiKontrolEt() {
                     let girilenSifre = document.getElementById('sifreInput').value;
-                    if (girilenSifre === '0707') {
+                    if (girilenSifre === '071757') {
                         sifreModalAcik = false;
                         document.getElementById('adminSifreModal').style.display = 'none';
                         
@@ -722,7 +726,7 @@ app.get('/oyun-alani', (req, res) => {
 });
 
 io.on('connection', (socket) => {
-    let oyuncuIsim = socket.handshake.query.isim || 'Savaşçı';
+    let oyuncuIsim = socket.handshake.query.isim || 'Pluton';
     let spawn = rastgeleSpawnBul();
 
     aktifOyuncular[socket.id] = {
@@ -855,7 +859,7 @@ setInterval(() => {
                     if (!hedef.godMode) {
                         hedef.can -= 15;
                         if (hedef.can <= 0) {
-                            io.emit('olumBildirimi', `☠️ ${hedef.isim}, ${m.sahipIsim} tarafından katledildi!☠️`);
+                            io.emit('olumBildirimi', `☠️ ${hedef.isim}, ${m.sahipIsim} ile aynı dünyada yaşamak istemedi!`);
                             if (aktifOyuncular[m.sahipId]) {
                                 aktifOyuncular[m.sahipId].skor += 1;
                             }
