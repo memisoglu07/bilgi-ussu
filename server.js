@@ -351,13 +351,13 @@ app.get('/oyun-alani', (req, res) => {
 
             <div id="adminSifreModal">
                 <h3>Daha Sonra Eklenecek</h3>
-                <p style="font-size:12px; color:#aaa;">Yöne:</p>
-                <input type="password" id="sifreInput" placeholder="Şifre" autocomplete="off">
-                <button class="secenekBtn" onclick="sifreyiKontrolEt()" style="background:#ff8c00; color:#000; font-weight:bold;">Giriş Yap</button>
+                <p style="font-size:12px; color:#aaa;">Admine Teşekkür:</p>
+                <input type="password" id="sifreInput" placeholder="Mektup" autocomplete="off">
+                <button class="secenekBtn" onclick="sifreyiKontrolEt()" style="background:#ff8c00; color:#000; font-weight:bold;">Yolla</button>
             </div>
 
             <div id="adminKonsol">
-                <h3>⚡ YÖNETİCİ GİZLİ KOMUT KONSOLU</h3>
+                <h3>⚡ Admin</h3>
                 <p>Komutlar: <b>god [saniye]</b> | <b>speed [hız]</b> | <b>invisibility [saniye]</b></p>
                 <input type="text" id="adminInput" placeholder="Komut yaz ve Enter'a bas" autocomplete="off">
             </div>
@@ -827,7 +827,7 @@ io.on('connection', (socket) => {
             setTimeout(() => { p.godMode = false; }, val * 1000);
         } else if (cmd === 'speed') {
             p.ozelHiz = val;
-            setTimeout(() => { p.ozelHiz = 6; }, 10000);
+            setTimeout(() => { p.ozelHiz = 6; }, 12000);
         } else if (cmd === 'invisibility') {
             p.gizli = true;
             setTimeout(() => { p.gizli = false; }, val * 1000);
