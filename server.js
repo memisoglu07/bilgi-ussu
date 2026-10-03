@@ -11,19 +11,22 @@ const io = new Server(server, {
     cors: { origin: "*", methods: ["GET", "POST"] }
 });
 
-// Bulut sunucuların dinamik portu (Koyeb / Render / Railway Uyumlu)
 const PORT = process.env.PORT || 3000;
 
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 app.use(bodyParser.json({ limit: '10mb' }));
 
-// Klasördeki statik dosyaları dışarı açma
 app.use(express.static(__dirname));
 app.use('/ses', express.static(path.join(__dirname, 'ses')));
 app.use('/muzik', express.static(path.join(__dirname, 'ses/muzik')));
 app.use('/karakterler', express.static(path.join(__dirname, 'karakterler')));
 
-// Veritabanı Bağlantısı (Bulut Uyumlu + Hata Yakalamalı)
+// --- TÜBİTAK PROJE ANALİZ VERİLERİ (YENİ EKLENEN BİLİMSEL ALTYAPI) ---
+let projeArastirmaVerileri = {
+    toplamOynayanOgrenci: 0,
+    ogrenmeGelisimAnalizleri: [] // Ön test ve son test başarı artışlarını kaydetmek için
+};
+
 const db = mysql.createConnection({ 
     host: process.env.DB_HOST || '127.0.0.1', 
     port: process.env.DB_PORT || 8889, 
@@ -55,6 +58,15 @@ app.get('/', (req, res) => res.send(layout(`
     <p>Fen Bilimleri Kaliteli Chest Soruları & Arena</p><br>
     <a href="/karakter-sec" class="btn" style="background:#ff4757; color:#fff;">🎨 Karakterini Tasarla ve Başla</a>
 `)));
+
+// Öğretmen/Admin paneli için TÜBİTAK Etki Analizi Rota Uç Noktası
+app.get('/api/tubitak-analiz', (req, res) => {
+    res.json({
+        basarili: true,
+        projeAdi: "Bilgi Üssü: Çok Oyunculu Eğitsel Arena",
+        istatistikler: projeArastirmaVerileri
+    });
+});
 
 app.get('/karakter-sec', (req, res) => {
     res.send(`
@@ -289,7 +301,7 @@ app.get('/oyun-alani', (req, res) => {
             
             <div id="ustPanel">
                 <div class="panelKutusu">
-                    ⏱️️ Maç Süresi: <b id="sayacGosterge" style="color:#fff;">05:00</b>
+                    ⏱️ Maç Süresi: <b id="sayacGosterge" style="color:#fff;">05:00</b>
                 </div>
                 <div class="panelKutusu" style="min-width: 160px;">
                     🏆 <b>Skor Tablosu</b>
@@ -369,7 +381,6 @@ app.get('/oyun-alani', (req, res) => {
                 const isim = sessionStorage.getItem('oyuncuIsim') || 'Savaşçı';
                 const benimAvatarim = sessionStorage.getItem('oyuncuAvatar') || '';
 
-                // MEB ve Bulut Uyumlu Otomatik Socket Bağlantısı
                 const socket = io({ query: { isim: isim }, forceNew: true, transports: ['websocket', 'polling'] });
                 socket.on('connect', () => { socket.emit('avatarGuncelle', benimAvatarim); });
 
@@ -579,11 +590,9 @@ app.get('/oyun-alani', (req, res) => {
                     ctx.save();
                     ctx.translate(-kameraX, -kameraY);
 
-                    // Harita Arka Planı
                     ctx.fillStyle = '#1e1e1e';
                     ctx.fillRect(0, 0, ${HARITA_GENISLIK}, ${HARITA_YUKSEKLIK});
 
-                    // Bölgeleri Çiz
                     for (let b of oyunVerisi.bolgeler) {
                         ctx.fillStyle = b.renk;
                         ctx.fillRect(b.x, b.y, b.w, b.h);
@@ -598,7 +607,6 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.fillText("📍 " + b.isim, b.x + b.w / 2, b.y + 50);
                     }
 
-                    // Duvarları Çiz
                     for (let d of oyunVerisi.walls) {
                         ctx.fillStyle = '#2c3e50';
                         ctx.fillRect(d.x, d.y, d.w, d.h);
@@ -607,7 +615,6 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.strokeRect(d.x, d.y, d.w, d.h);
                     }
 
-                    // Sandıkları Çiz
                     for (let c of oyunVerisi.chests) {
                         if (!c.aktif) continue;
                         if (chestImg.complete && chestImg.naturalWidth !== 0) {
@@ -618,7 +625,6 @@ app.get('/oyun-alani', (req, res) => {
                         }
                     }
 
-                    // Mermileri Çiz
                     for (let m of oyunVerisi.bullets) {
                         ctx.fillStyle = '#ff4757';
                         ctx.beginPath();
@@ -628,7 +634,6 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.stroke();
                     }
 
-                    // Oyuncuları Çiz
                     for (let id in oyunVerisi.players) {
                         let p = oyunVerisi.players[id];
                         if (p.gizli && id !== benimId) continue;
@@ -695,8 +700,11 @@ io.on('connection', (socket) => {
         avatar: null,
         ozelHiz: 6,
         godMode: false,
-        gizli: false
+        gizli: false,
+        dogruSayisi: 0 // TÜBİTAK analizleri için öğrencinin başarı takibi
     };
+
+    projeArastirmaVerileri.toplamOynayanOgrenci = Object.keys(aktifOyuncular).length;
 
     socket.on('avatarGuncelle', (avatarData) => {
         if (aktifOyuncular[socket.id]) {
@@ -739,6 +747,7 @@ io.on('connection', (socket) => {
 
         if (data.secilenIndex === data.dogruCevap) {
             p.skor += 15;
+            p.dogruSayisi += 1;
             p.can = Math.min(100, p.can + 25);
             socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '🎉 Doğru Cevap! +15 Puan ve Can Kazandın.' });
         } else {
@@ -790,7 +799,17 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
+        if(aktifOyuncular[socket.id]) {
+            // Öğrenci oyundan çıkarken istatistik verisini rapora kaydet
+            projeArastirmaVerileri.ogrenmeGelisimAnalizleri.push({
+                ogrenciAdi: aktifOyuncular[socket.id].isim,
+                dogruCevapSayisi: aktifOyuncular[socket.id].dogruSayisi,
+                toplamSkor: aktifOyuncular[socket.id].skor,
+                ayrilmaTarihi: new Date().toLocaleString()
+            });
+        }
         delete aktifOyuncular[socket.id];
+        projeArastirmaVerileri.toplamOynayanOgrenci = Object.keys(aktifOyuncular).length;
     });
 });
 
@@ -842,6 +861,5 @@ setInterval(() => {
 }, 1000 / 30);
 
 server.listen(PORT, () => {
-    console.log(`🚀 Sunucu ${PORT} portunda başarıyla başlatıldı!`);
+    console.log(`🚀 Bilgi Üssü Sunucusu ${PORT} portunda başarıyla başlatıldı!`);
 });
-```[cite: 18]
