@@ -58,7 +58,7 @@ app.get('/', (req, res) => res.send(layout(`
 
 app.get('/karakter-sec', (req, res) => {
     res.send(`
-        <!DOCTYPE html><html><head><title>Kostüm Yap!</title><style>
+        <!DOCTYPE html><html><head><title>Karakter Tasarımı</title><style>
             body { background:#0a0a0a; color:#FFD700; font-family:'Segoe UI', sans-serif; margin:0; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; }
             .box { background:linear-gradient(145deg, #1e1e1e, #000); padding:25px; border-radius:20px; border:2px solid #FFD700; width:420px; text-align:center; box-shadow:0 0 30px rgba(255,215,0,0.2); }
             input[type="text"], input[type="file"], input[type="color"] { width: 100%; padding: 8px; margin: 6px 0; border-radius: 8px; border: 1px solid #444; background: #111; color: #fff; box-sizing: border-box; text-align: center; font-size: 14px; }
@@ -166,53 +166,8 @@ const FEN_SORULARI = [
     { soru: "Güneş'e en uzak olan gezegen hangisidir?", secenekler: ["Uranüs", "Neptün", "Satürn", "Jüpiter"], cevap: 1 },
     { soru: "Güneş tutulmasında hangi gök cismi ortadadır?", secenekler: ["Dünya", "Güneş", "Ay", "Mars"], cevap: 2 },
     { soru: "Ay tutulmasında hangi gök cismi ortadadır?", secenekler: ["Ay", "Dünya", "Güneş", "Venüs"], cevap: 1 },
-    { soru: "Güneş tutulması olayı ayın hangi evresinde gerçekleşir?", secenekler: ["Yeni Ay", "Dolunay", "İlk Dördün", "Son Dördün"], cevap: 0 },
-    { soru: "Ay tutulması olayı Ay'ın hangi evresinde gerçekleşir?", secenekler: ["Yeni Ay", "İlk Dördün", "Dolunay", "Son Dördün"], cevap: 2 },
-    { soru: "Aşağıdakilerden hangisi iç (karasal) gezegenlerden biri değildir?", secenekler: ["Merkür", "Venüs", "Mars", "Jüpiter"], cevap: 3 },
-    { soru: "Aşağıdakilerden hangisi dış (gazsal) gezegenlerden biridir?", secenekler: ["Satürn", "Dünya", "Mars", "Venüs"], cevap: 0 },
-    { soru: "Güneş sistemindeki gezegenlerin kaç tanesinin doğal uydusu bulunmaz?", secenekler: ["1", "2", "3", "4"], cevap: 1 },
-    { soru: "Doğal uydusu bulunmayan gezegenler hangi seçenekte doğru verilmiştir?", secenekler: ["Merkür - Venüs", "Dünya - Mars", "Jüpiter - Satürn", "Uranüs - Neptün"], cevap: 0 },
-    { soru: "Güneş sisteminde uydusu en fazla olan gezegen hangisidir?", secenekler: ["Jüpiter", "Satürn", "Uranüs", "Neptün"], cevap: 1 },
-    { soru: "Gezegenlerin etrafında dolanan gök cisimlerine ne ad verilir?", secenekler: ["Kuyruklu yıldız", "Meteor", "Uydu", "Asteroit"], cevap: 2 },
-    { soru: "Güneş sistemindeki en küçük gezegen hangisidir?", secenekler: ["Mars", "Merkür", "Venüs", "Neptün"], cevap: 1 },
-    { soru: "Çoban Yıldızı veya Akşam Yıldızı olarak da bilinen gezegen hangisidir?", secenekler: ["Venüs", "Mars", "Jüpiter", "Merkür"], cevap: 0 },
-    { soru: "Atmosferindeki yoğun karbondioksit nedeniyle seranın etkisi gösteren ve çok sıcak olan gezegen hangisidir?", secenekler: ["Merkür", "Venüs", "Mars", "Dünya"], cevap: 1 },
-    { soru: "Gök bilimciler tarafından 'İkiz Gezegenler' olarak adlandırılan büyüklükleri birbirine yakın olan iki gezegen hangisidir?", secenekler: ["Dünya ve Venüs", "Mars ve Merkür", "Jüpiter ve Satürn", "Uranüs ve Neptün"], cevap: 0 },
-    { soru: "Phobos ve Deimos adında iki küçük uydusu olan gezegen hangisidir?", secenekler: ["Merkür", "Venüs", "Mars", "Jüpiter"], cevap: 2 },
-    { soru: "Mars ve Jüpiter yörüngeleri arasında yoğun olarak bulunan gök cisimlerine ne ad verilir?", secenekler: ["Meteor", "Asteroit kuşağı", "Galaksi", "Kuyruklu yıldız"], cevap: 1 },
-    { soru: "Yan yatmış bir varil gibi yörüngesinde dönen gezegen hangisidir?", secenekler: ["Uranüs", "Neptün", "Satürn", "Jüpiter"], cevap: 0 },
-    { soru: "Uranüs'ün ikizi olarak bilinen lacivert renkli gezegen hangisidir?", secenekler: ["Jüpiter", "Satürn", "Mars", "Neptün"], cevap: 3 },
-    { soru: "Titan adlı en büyük uydusuyla tanınan halkalı gezegen hangisidir?", secenekler: ["Satürn", "Jüpiter", "Uranüs", "Neptün"], cevap: 0 },
-    { soru: "Dünya atmosferine girerek yanan ve halk arasında 'yıldız kayması' olarak bilinen gök cisimleri hangisidir?", secenekler: ["Asteroit", "Gezegen", "Meteor", "Gök taşı"], cevap: 2 },
-    { soru: "Atmosferden geçip yanarak tükenmeyip yeryüzüne ulaşan meteor parçalarına ne ad verilir?", secenekler: ["Gök taşı (Meteorit)", "Asteroit", "Kuyruklu yıldız", "Bulutsu"], cevap: 0 },
-    { soru: "Gök taşlarının yeryüzüne düştüklerinde oluşturdukları derin çukurlara ne ad verilir?", secenekler: ["Krater", "Gök taşı çukuru", "Kanyon", "Vadi"], cevap: 1 },
-    { soru: "Güneş tutulması esnasında Dünya üzerinde ne oluşur?", secenekler: ["Tam gölge alanı", "Işık patlaması", "Gelgit dalgası", "Magma tabakası"], cevap: 0 },
-    { soru: "Güneş tutulması Dünya'nın her yerinden gözlemlenebilir mi?", secenekler: ["Evet, her yerden aynı anda görünür", "Hayır, sadece gündüzü yaşayan dar bir bölgeden görünür", "Hayır, sadece geceyi yaşayan yerlerden görünür", "Evet, kutuplardan daha iyi görünür"], cevap: 1 },
-    { soru: "Ay tutulması hangi vakitte ve nasıl bir alanda gözlemlenebilir?", secenekler: ["Gündüz, dar bir alanda", "Gece, Ay'ı görebilen geniş bir alanda", "Sadece kutuplarda", "Güneş doğarken"], cevap: 1 },
-    { soru: "Güneş tutulmasını çıplak gözle izlemek neden tehlikelidir?", secenekler: ["Göz gözü görmez olur", "Göz merceğine zarar verip körlüğe yol açabilir", "Ay'ın çekim kuvveti gözü bozar", "Radyo dalgaları yayılır"], cevap: 1 },
-    { soru: "Ay tutulmasını izlerken koruyucu gözlük kullanmaya gerek var mıdır?", secenekler: ["Evet, gözü kör eder", "Hayır, çıplak gözle güvenle izlenebilir", "Evet, sadece teleskopla bakılmalıdır", "Hayır, çünkü Ay ışık kaynağıdır"], cevap: 1 },
-    { soru: "Güneş ve Ay tutulmalarının gerçekleşmesi için en önemli şart nedir?", secenekler: ["Güneş, Dünya ve Ay'ın aynı doğrultuda olması", "Ay'ın Dünya'ya en yakın konumda olması", "Dünya'nın kendi ekseninde hızlı dönmesi", "Mevsimin yaz olması"], cevap: 0 },
-    { soru: "Her ay Güneş ve Ay tutulması gerçekleşmemesinin temel sebebi nedir?", secenekler: ["Ay'ın dolanma yörüngesinin eğik olması", "Dünya'nın Güneş'e olan uzaklığının değişmesi", "Gezegenlerin çekim kuvveti", "Güneş'in çok büyük olması"], cevap: 0 },
-    { soru: "Güneş tutulması ne kadar süreyle etkili olur?", secenekler: ["Birkaç dakika", "Birkaç gün", "Birkaç saat", "Tüm gün boyunca"], cevap: 0 },
-    { soru: "Ay tutulması ne kadar süreyle gözlemlenebilir?", secenekler: ["Birkaç dakika", "Birkaç saat", "Birkaç gün", "Birkaç saniye"], cevap: 1 },
-    { soru: "Güneş tutulması sırasında Ay, Güneş ile Dünya arasındadır. Bu olay bir ışık gölge modelidir. Buna göre hangisi doğrudur?", secenekler: ["Güneş opak maddedir", "Ay opak maddedir", "Dünya ışık kaynağıdır", "Ay saydam maddedir"], cevap: 1 },
-    { soru: "Güneş sistemindeki gezegenler Güneş etrafında hangi yönde dolanırlar?", secenekler: ["Saat yönünde", "Saat yönünün tersine", "Yukarıdan aşağıya", "Doğudan batıya"], cevap: 1 },
-    { soru: "Kendi ekseni etrafında saat yönünde (doğudan batıya) dönen gezegen hangisidir?", secenekler: ["Dünya", "Mars", "Venüs", "Jüpiter"], cevap: 2 },
-    { soru: "Güneş'e yakınlık derecesine göre 4. sırada yer alan gezegen hangisidir?", secenekler: ["Dünya", "Mars", "Jüpiter", "Satürn"], cevap: 1 },
-    { soru: "Güneş sistemindeki gezegenler yapılarına göre kaç gruba ayrılır?", secenekler: ["2 (İç ve Dış Gezegenler)", "3 (Büyük, Orta, Küçük)", "4 (Sıcak, Soğuk, Gaz, Katı)", "1 (Hepsi aynı yapıdadır)"], cevap: 0 },
-    { soru: "İç gezegenlerin tamamının ortak özelliği nedir?", secenekler: ["Halkalarının olması", "Gaz yapıda olmaları", "Kayalık (karasal) yapıda olmaları", "Çok sayıda uyduya sahip olmaları"], cevap: 2 },
-    { soru: "Dış gezegenlerin tamamının ortak özelliği nedir?", secenekler: ["Güneş'e çok yakın olmaları", "Gaz yapıda olmaları", "Hiç uydularının olmaması", "Yüzeylerinin kayalık olması"], cevap: 1 },
-    { soru: "Büyüklük sıralamasında (büyükten küçüğe) Dünya kaçıncı sıradadır?", secenekler: ["3", "4", "5", "6"], cevap: 2 },
-    { soru: "Aşağıdaki gök cisimlerinden hangisi bir gezegen değildir?", secenekler: ["Uranüs", "Plüton (Cüce gezegen)", "Neptün", "Satürn"], cevap: 1 },
-    { soru: "Güneş tutulması hangi zaman diliminde gerçekleşir?", secenekler: ["Gece vaktinde", "Gündüz vaktinde", "Akşamüstü", "Gece yarısı"], cevap: 1 },
-    { soru: "Ay tutulması hangi zaman diliminde gerçekleşir?", secenekler: ["Gündüz vaktinde", "Gece vaktinde", "Öğle vaktinde", "Sabah gün doğumunda"], cevap: 1 },
-    { soru: "Güneş tutulmasında Ay'ın gölgesi nereye düşer?", secenekler: ["Güneş'in üzerine", "Dünya'nın belirli bir bölümünün üzerine", "Uzay boşluğuna", "Mars'ın üzerine"], cevap: 1 },
-    { soru: "Titanın Kütlesi Nedir?", secenekler: ["1,345 × 10²³", "2", "Titan", "e=mc2"], cevap: 0 },
-    { soru: "Güneş Nereden Doğar?", secenekler: ["Annesinden", "Batıdan", "Doğudan", "Güneyden"], cevap: 2 },
-    { soru: "Hangi Gezegene Seher Yıldızı Denir?", secenekler: ["Venüs", "Seher Yıldızı", "Merkür", "Mars"], cevap: 0 },
-    { soru: "Plüton ne zaman cüce gezegen oldu?", secenekler: ["24 Ağustos", "30 Ağustos", "23 Nisan", "10 Kasım"], cevap: 0 },
+    { soru: "Güneş tutulması olayı ayın hangi evresinde gerçekleşir?", secenekler: ["Yeni Ay", "Dolunay", "İlk Dördün", "Son Dördün"], cevap: 0 }
 ];
-
 
 const HARITA_GENISLIK = 2000;
 const HARITA_YUKSEKLIK = 1500;
@@ -261,7 +216,7 @@ setInterval(() => {
             aktifOyuncular[id].x = sp.x;
             aktifOyuncular[id].y = sp.y;
         }
-        io.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '🏁 Maç bitti! Skorlar sıfırlandı, yeni maç başladı!' });
+        io.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '🏁 Maç süresi bitti! Skorlar sıfırlandı, yeni maç başladı!' });
     }
 }, 1000);
 
@@ -293,7 +248,7 @@ const NEON_RENKLER = ['#00ffcc', '#ff00ff', '#00ffff', '#ff5050', '#ffff00', '#f
 
 app.get('/oyun-alani', (req, res) => {
     res.send(`
-        <!DOCTYPE html><html><head><title>☠️Bilgi Üssü☠️</title><style>
+        <!DOCTYPE html><html><head><title>Fen Bilimleri Chest Arena</title><style>
             body { background:#0f0f0f; color:#fff; margin:0; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; font-family:sans-serif; overflow:hidden; }
             canvas { background:#181818; border:4px solid #FFD700; box-shadow:0 0 30px rgba(255,215,0,0.4); cursor: crosshair; }
             .ui { margin-bottom:4px; font-size:16px; color:#FFD700; font-weight:bold; }
@@ -334,7 +289,7 @@ app.get('/oyun-alani', (req, res) => {
             
             <div id="ustPanel">
                 <div class="panelKutusu">
-                    ⏱️ Maç Süresi: <b id="sayacGosterge" style="color:#fff;">05:00</b>
+                    ⏱️️ Maç Süresi: <b id="sayacGosterge" style="color:#fff;">05:00</b>
                 </div>
                 <div class="panelKutusu" style="min-width: 160px;">
                     🏆 <b>Skor Tablosu</b>
@@ -344,20 +299,20 @@ app.get('/oyun-alani', (req, res) => {
 
             <div id="muzikPaneli">
                 <span id="sesIkona" style="cursor:pointer; font-size:18px;" onclick="toggleMuzik()" title="Sesi Aç/Kapat">🔊</span>
-                <button onclick="play('pixel-drift.mp3')">Pixel Drift</button>
-                <button onclick="play('asphalt-menace.mp3')">Asphalt Menace</button>
-                <button onclick="play('cybernetic-assault.mp3')">Cybernetic Assault</button>
+                <button onclick="oynat('pixel-drift.mp3')">Pixel Drift</button>
+                <button onclick="oynat('asphalt-menace.mp3')">Asphalt Menace</button>
+                <button onclick="oynat('cybernetic-assault.mp3')">Cybernetic Assault</button>
             </div>
 
             <div id="adminSifreModal">
-                <h3>Daha Sonra Eklenecek</h3>
-                <p style="font-size:12px; color:#aaa;">Admine Teşekkür:</p>
-                <input type="password" id="sifreInput" placeholder="Mektup" autocomplete="off">
-                <button class="secenekBtn" onclick="sifreyiKontrolEt()" style="background:#ff8c00; color:#000; font-weight:bold;">Yolla</button>
+                <h3>🔒 YÖNETİCİ ŞİFRESİ GEREKLİ</h3>
+                <p style="font-size:12px; color:#aaa;">Hile konsolunu açmak için şifreyi gir:</p>
+                <input type="password" id="sifreInput" placeholder="Şifre" autocomplete="off">
+                <button class="secenekBtn" onclick="sifreyiKontrolEt()" style="background:#ff8c00; color:#000; font-weight:bold;">Giriş Yap</button>
             </div>
 
             <div id="adminKonsol">
-                <h3>⚡ Admin</h3>
+                <h3>⚡ YÖNETİCİ GİZLİ KOMUT KONSOLU</h3>
                 <p>Komutlar: <b>god [saniye]</b> | <b>speed [hız]</b> | <b>invisibility [saniye]</b></p>
                 <input type="text" id="adminInput" placeholder="Komut yaz ve Enter'a bas" autocomplete="off">
             </div>
@@ -468,7 +423,7 @@ app.get('/oyun-alani', (req, res) => {
 
                 function sifreyiKontrolEt() {
                     let girilenSifre = document.getElementById('sifreInput').value;
-                    if (girilenSifre === '071757') {
+                    if (girilenSifre === '0707') {
                         sifreModalAcik = false;
                         document.getElementById('adminSifreModal').style.display = 'none';
                         
@@ -726,7 +681,7 @@ app.get('/oyun-alani', (req, res) => {
 });
 
 io.on('connection', (socket) => {
-    let oyuncuIsim = socket.handshake.query.isim || 'Pluton';
+    let oyuncuIsim = socket.handshake.query.isim || 'Savaşçı';
     let spawn = rastgeleSpawnBul();
 
     aktifOyuncular[socket.id] = {
@@ -783,9 +738,9 @@ io.on('connection', (socket) => {
         if (!p) return;
 
         if (data.secilenIndex === data.dogruCevap) {
-            p.skor += 10;
-            p.can = Math.min(100, p.can + 100);
-            socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '🎉 Doğru Cevap! +10 Puan ve Can Kazandın.' });
+            p.skor += 15;
+            p.can = Math.min(100, p.can + 25);
+            socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '🎉 Doğru Cevap! +15 Puan ve Can Kazandın.' });
         } else {
             socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '❌ Yanlış Cevap!' });
         }
@@ -827,7 +782,7 @@ io.on('connection', (socket) => {
             setTimeout(() => { p.godMode = false; }, val * 1000);
         } else if (cmd === 'speed') {
             p.ozelHiz = val;
-            setTimeout(() => { p.ozelHiz = 6; }, 12000);
+            setTimeout(() => { p.ozelHiz = 6; }, 10000);
         } else if (cmd === 'invisibility') {
             p.gizli = true;
             setTimeout(() => { p.gizli = false; }, val * 1000);
@@ -859,9 +814,9 @@ setInterval(() => {
                     if (!hedef.godMode) {
                         hedef.can -= 15;
                         if (hedef.can <= 0) {
-                            io.emit('olumBildirimi', `☠️ ${hedef.isim}, ${m.sahipIsim} ile aynı dünyada yaşamak istemedi!`);
+                            io.emit('olumBildirimi', `💀 ${hedef.isim}, ${m.sahipIsim} tarafından avlandı!`);
                             if (aktifOyuncular[m.sahipId]) {
-                                aktifOyuncular[m.sahipId].skor += 1;
+                                aktifOyuncular[m.sahipId].skor += 25;
                             }
                             let sp = rastgeleSpawnBul();
                             hedef.x = sp.x;
@@ -889,3 +844,4 @@ setInterval(() => {
 server.listen(PORT, () => {
     console.log(`🚀 Sunucu ${PORT} portunda başarıyla başlatıldı!`);
 });
+```[cite: 18]
