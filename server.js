@@ -21,12 +21,6 @@ app.use('/ses', express.static(path.join(__dirname, 'ses')));
 app.use('/muzik', express.static(path.join(__dirname, 'ses/muzik')));
 app.use('/karakterler', express.static(path.join(__dirname, 'karakterler')));
 
-// --- TÜBİTAK PROJE ANALİZ VERİLERİ (YENİ EKLENEN BİLİMSEL ALTYAPI) ---
-let projeArastirmaVerileri = {
-    toplamOynayanOgrenci: 0,
-    ogrenmeGelisimAnalizleri: [] // Ön test ve son test başarı artışlarını kaydetmek için
-};
-
 const db = mysql.createConnection({ 
     host: process.env.DB_HOST || '127.0.0.1', 
     port: process.env.DB_PORT || 8889, 
@@ -59,13 +53,20 @@ app.get('/', (req, res) => res.send(layout(`
     <a href="/karakter-sec" class="btn" style="background:#ff4757; color:#fff;">🎨 Karakterini Tasarla ve Başla</a>
 `)));
 
-// Öğretmen/Admin paneli için TÜBİTAK Etki Analizi Rota Uç Noktası
-app.get('/api/tubitak-analiz', (req, res) => {
-    res.json({
-        basarili: true,
-        projeAdi: "Bilgi Üssü: Çok Oyunculu Eğitsel Arena",
-        istatistikler: projeArastirmaVerileri
-    });
+// TÜBİTAK Araştırma Raporu İçin Skor/Test Verisi Kayıt Rotası
+app.post('/api/tubitak-veri-kaydet', (req, res) => {
+    const { isim, dogruSayisi, yanlisSayisi, oyunPuani } = req.body;
+    console.log(`📊 TÜBİTAK İSTATİSTİK -> Öğrenci: ${isim} | Doğru: ${dogruSayisi} | Yanlış: ${yanlisSayisi} | Puan: ${oyunPuani}`);
+    
+    // Veritabanı bağlıysa tabloya yazabilirsin
+    if (db && db.config) {
+        db.query('INSERT INTO istatistikler (isim, dogru, yanlis, puan) VALUES (?, ?, ?, ?)', 
+            [isim, dogruSayisi, yanlisSayisi, oyunPuani], (err) => {
+                if (err) console.log("Veritabanı kayıt hatası (Tablo olmayabilir):", err.message);
+            }
+        );
+    }
+    res.json({ success: true, mesaj: "Veri başarıyla kaydedildi." });
 });
 
 app.get('/karakter-sec', (req, res) => {
@@ -301,7 +302,7 @@ app.get('/oyun-alani', (req, res) => {
             
             <div id="ustPanel">
                 <div class="panelKutusu">
-                    ⏱️ Maç Süresi: <b id="sayacGosterge" style="color:#fff;">05:00</b>
+                    ⏱️️ Maç Süresi: <b id="sayacGosterge" style="color:#fff;">05:00</b>
                 </div>
                 <div class="panelKutusu" style="min-width: 160px;">
                     🏆 <b>Skor Tablosu</b>
@@ -696,15 +697,14 @@ io.on('connection', (socket) => {
         y: spawn.y,
         can: 100,
         skor: 0,
+        dogruSayisi: 0,
+        yanlisSayisi: 0,
         renk: NEON_RENKLER[Math.floor(Math.random() * NEON_RENKLER.length)],
         avatar: null,
         ozelHiz: 6,
         godMode: false,
-        gizli: false,
-        dogruSayisi: 0 // TÜBİTAK analizleri için öğrencinin başarı takibi
+        gizli: false
     };
-
-    projeArastirmaVerileri.toplamOynayanOgrenci = Object.keys(aktifOyuncular).length;
 
     socket.on('avatarGuncelle', (avatarData) => {
         if (aktifOyuncular[socket.id]) {
@@ -747,10 +747,11 @@ io.on('connection', (socket) => {
 
         if (data.secilenIndex === data.dogruCevap) {
             p.skor += 15;
-            p.dogruSayisi += 1;
+            p.dogruSayisi++;
             p.can = Math.min(100, p.can + 25);
             socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '🎉 Doğru Cevap! +15 Puan ve Can Kazandın.' });
         } else {
+            p.yanlisSayisi++;
             socket.emit('chatMesajiGelsin', { isim: 'SİSTEM', mesaj: '❌ Yanlış Cevap!' });
         }
     });
@@ -799,17 +800,12 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        if(aktifOyuncular[socket.id]) {
-            // Öğrenci oyundan çıkarken istatistik verisini rapora kaydet
-            projeArastirmaVerileri.ogrenmeGelisimAnalizleri.push({
-                ogrenciAdi: aktifOyuncular[socket.id].isim,
-                dogruCevapSayisi: aktifOyuncular[socket.id].dogruSayisi,
-                toplamSkor: aktifOyuncular[socket.id].skor,
-                ayrilmaTarihi: new Date().toLocaleString()
-            });
+        let p = aktifOyuncular[socket.id];
+        if (p) {
+            // Oyuncu çıktığında TÜBİTAK için otomatik istatistik raporu logla
+            console.log(`📊 OYUN SONU RAPORU -> ${p.isim}: ${p.dogruSayisi} Doğru, ${p.yanlisSayisi} Yanlış, ${p.skor} Puan`);
         }
         delete aktifOyuncular[socket.id];
-        projeArastirmaVerileri.toplamOynayanOgrenci = Object.keys(aktifOyuncular).length;
     });
 });
 
@@ -861,5 +857,5 @@ setInterval(() => {
 }, 1000 / 30);
 
 server.listen(PORT, () => {
-    console.log(`🚀 Bilgi Üssü Sunucusu ${PORT} portunda başarıyla başlatıldı!`);
+    console.log(`🚀 Sunucu ${PORT} portunda başarıyla başlatıldı!`);
 });
