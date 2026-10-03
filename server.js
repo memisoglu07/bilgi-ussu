@@ -11,19 +11,16 @@ const io = new Server(server, {
     cors: { origin: "*", methods: ["GET", "POST"] }
 });
 
-// Bulut sunucuların dinamik portu (Koyeb / Render / Railway Uyumlu)[cite: 2]
 const PORT = process.env.PORT || 3000;
 
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 app.use(bodyParser.json({ limit: '10mb' }));
 
-// Klasördeki statik dosyaları dışarı açma[cite: 2]
 app.use(express.static(__dirname));
 app.use('/ses', express.static(path.join(__dirname, 'ses')));
 app.use('/muzik', express.static(path.join(__dirname, 'ses/muzik')));
 app.use('/karakterler', express.static(path.join(__dirname, 'karakterler')));
 
-// Veritabanı Bağlantısı (Bulut Uyumlu + Hata Yakalamalı)[cite: 2]
 const db = mysql.createConnection({ 
     host: process.env.DB_HOST || '127.0.0.1', 
     port: process.env.DB_PORT || 8889, 
@@ -34,9 +31,9 @@ const db = mysql.createConnection({
 
 db.connect((err) => {
     if (err) {
-        console.log("⚠️ Veritabanı bağlantısı sağlanamadı, bellek içi modda devam ediliyor.");[cite: 2]
+        console.log("⚠️ Veritabanı bağlantısı sağlanamadı, bellek içi modda devam ediliyor.");
     } else {
-        console.log("✅ Veritabanı bağlantısı başarılı.");[cite: 2]
+        console.log("✅ Veritabanı bağlantısı başarılı.");
     }
 });
 
@@ -369,7 +366,6 @@ app.get('/oyun-alani', (req, res) => {
                 const isim = sessionStorage.getItem('oyuncuIsim') || 'Savaşçı';
                 const benimAvatarim = sessionStorage.getItem('oyuncuAvatar') || '';
 
-                // MEB ve Bulut Uyumlu Otomatik Socket Bağlantısı
                 const socket = io({ query: { isim: isim }, forceNew: true, transports: ['websocket', 'polling'] });
                 socket.on('connect', () => { socket.emit('avatarGuncelle', benimAvatarim); });
 
@@ -516,7 +512,7 @@ app.get('/oyun-alani', (req, res) => {
                         let oyuncuDizi = Object.values(data.players).sort((a, b) => b.skor - a.skor);
                         oyuncuDizi.slice(0, 5).forEach((p, index) => {
                             let li = document.createElement('li');
-                            li.innerHTML = \`\${index + 1}. \${p.isim}: <b style="color:#FFD700;">\${p.skor}⭐</b>\`;
+                            li.innerHTML = \`${index + 1}. \${p.isim}: <b style="color:#FFD700;">\${p.skor}⭐</b>\`;
                             liste.appendChild(li);
                         });
                     }
@@ -579,11 +575,9 @@ app.get('/oyun-alani', (req, res) => {
                     ctx.save();
                     ctx.translate(-kameraX, -kameraY);
 
-                    // Harita Arka Planı
                     ctx.fillStyle = '#1e1e1e';
                     ctx.fillRect(0, 0, ${HARITA_GENISLIK}, ${HARITA_YUKSEKLIK});
 
-                    // Bölgeleri Çiz
                     for (let b of oyunVerisi.bolgeler) {
                         ctx.fillStyle = b.renk;
                         ctx.fillRect(b.x, b.y, b.w, b.h);
@@ -598,7 +592,6 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.fillText("📍 " + b.isim, b.x + b.w / 2, b.y + 50);
                     }
 
-                    // Duvarları Çiz
                     for (let d of oyunVerisi.walls) {
                         ctx.fillStyle = '#2c3e50';
                         ctx.fillRect(d.x, d.y, d.w, d.h);
@@ -607,7 +600,6 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.strokeRect(d.x, d.y, d.w, d.h);
                     }
 
-                    // Sandıkları Çiz
                     for (let c of oyunVerisi.chests) {
                         if (!c.aktif) continue;
                         if (chestImg.complete && chestImg.naturalWidth !== 0) {
@@ -618,7 +610,6 @@ app.get('/oyun-alani', (req, res) => {
                         }
                     }
 
-                    // Mermileri Çiz
                     for (let m of oyunVerisi.bullets) {
                         ctx.fillStyle = '#ff4757';
                         ctx.beginPath();
@@ -628,7 +619,6 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.stroke();
                     }
 
-                    // Oyuncuları Çiz
                     for (let id in oyunVerisi.players) {
                         let p = oyunVerisi.players[id];
                         if (p.gizli && id !== benimId) continue;
