@@ -510,9 +510,11 @@ app.get('/oyun-alani', (req, res) => {
                     if (liste) {
                         liste.innerHTML = '';
                         let oyuncuDizi = Object.values(data.players).sort((a, b) => b.skor - a.skor);
-                        oyuncuDizi.slice(0, 5).forEach((p, index) => {
+                        
+                        // Hata alan döngü düzeltildi: Fonksiyon parametresi (p, index) olarak tamamen güvenli hale getirildi.
+                        oyuncuDizi.slice(0, 5).forEach(function(p, index) {
                             let li = document.createElement('li');
-                            li.innerHTML = \`${index + 1}. \${p.isim}: <b style="color:#FFD700;">\${p.skor}⭐</b>\`;
+                            li.innerHTML = (index + 1) + '. ' + p.isim + ': <b style="color:#FFD700;">' + p.skor + '⭐</b>';
                             liste.appendChild(li);
                         });
                     }
@@ -554,7 +556,7 @@ app.get('/oyun-alani', (req, res) => {
                     const chatGecmisi = document.getElementById('chatGecmisi');
                     const div = document.createElement('div');
                     div.className = 'chat-satir';
-                    div.innerHTML = \`<b style="color: #FFD700;">\${data.isim}:</b> \${data.mesaj}\`;
+                    div.innerHTML = '<b style="color: #FFD700;">' + data.isim + ':</b> ' + data.mesaj;
                     chatGecmisi.appendChild(div);
                     if (chatGecmisi.children.length > 6) chatGecmisi.children[0].remove();
                     chatGecmisi.scrollTop = chatGecmisi.scrollHeight;
@@ -569,7 +571,7 @@ app.get('/oyun-alani', (req, res) => {
                     let kameraX = 0, kameraY = 0;
                     if (ben) {
                         kameraX = Math.max(0, Math.min(ben.x - canvas.width / 2, ${HARITA_GENISLIK} - canvas.width));
-                        kameraY = Math.max(0, Math.min(ben.y - canvas.height / 2, 1500 - canvas.height));
+                        kameraY = Math.max(0, Math.min(ben.y - canvas.height / 2, ${HARITA_YUKSEKLIK} - canvas.height));
                     }
 
                     ctx.save();
