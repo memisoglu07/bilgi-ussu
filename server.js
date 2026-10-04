@@ -11,16 +11,19 @@ const io = new Server(server, {
     cors: { origin: "*", methods: ["GET", "POST"] }
 });
 
+// Bulut sunucuların dinamik portu (Koyeb / Render / Railway Uyumlu)
 const PORT = process.env.PORT || 3000;
 
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 app.use(bodyParser.json({ limit: '10mb' }));
 
+// Klasördeki statik dosyaları dışarı açma
 app.use(express.static(__dirname));
 app.use('/ses', express.static(path.join(__dirname, 'ses')));
 app.use('/muzik', express.static(path.join(__dirname, 'ses/muzik')));
 app.use('/karakterler', express.static(path.join(__dirname, 'karakterler')));
 
+// Veritabanı Bağlantısı (Bulut Uyumlu + Hata Yakalamalı)
 const db = mysql.createConnection({ 
     host: process.env.DB_HOST || '127.0.0.1', 
     port: process.env.DB_PORT || 8889, 
@@ -50,8 +53,50 @@ const layout = (content, title = "BİLGİ ÜSSÜ - BRAWL ARENA") => `
 app.get('/', (req, res) => res.send(layout(`
     <h1>BİLGİ ÜSSÜ</h1>
     <p>Fen Bilimleri Kaliteli Chest Soruları & Arena</p><br>
-    <a href="/karakter-sec" class="btn" style="background:#ff4757; color:#fff;">🎨 Karakterini Tasarla ve Başla</a>
+    <a href="/karakter-sec" class="btn" style="background:#ff4757; color:#fff;">🎮 Oyun Oyna</a>
+    <a href="/konu-ogren" class="btn" style="background:#0096ff; color:#fff;">📚 Konu Öğren (MEB Modül)</a>
 `)));
+
+// 📚 MEB Tarzı Konu Öğren Modülü Ekranı
+app.get('/konu-ogren', (req, res) => {
+    res.send(`
+        <!DOCTYPE html><html><head><title>Konu Öğren - MEB Modülü</title><style>
+            body { background:#0a0a0a; color:#FFD700; font-family:'Segoe UI', sans-serif; margin:0; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; }
+            .box { background:linear-gradient(145deg, #1e1e1e, #000); padding:30px; border-radius:20px; border:2px solid #0096ff; width:550px; text-align:left; box-shadow:0 0 30px rgba(0,150,255,0.2); }
+            h2 { color:#0096ff; text-align:center; margin-top:0; }
+            .unite-btn { display:block; width:100%; padding:12px; margin:8px 0; background:#111; color:#fff; border:1px solid #0096ff; border-radius:8px; cursor:pointer; font-size:14px; text-align:left; transition:0.2s; box-sizing:border-box; }
+            .unite-btn:hover { background:#0096ff; color:#000; font-weight:bold; }
+            #icerikAlani { margin-top:15px; padding:15px; background:#111; border:1px solid #444; border-radius:8px; font-size:13px; color:#ddd; max-height:220px; overflow-y:auto; line-height:1.5; }
+            .geri-btn { display:block; text-align:center; margin-top:15px; color:#888; text-decoration:none; font-size:13px; }
+            .geri-btn:hover { color:#fff; }
+        </style></head><body>
+            <div class="box">
+                <h2>MEB KAZANIM & KONU ÖĞRENME</h2>
+                <p style="font-size:12px; color:#aaa; text-align:center;">Çalışmak istediğin ünitenin konusunu seç:</p>
+                
+                <button class="unite-btn" onclick="konuGetir(1)">📖 1. Ünite: Güneş Sistemi ve Ötesi</button>
+                <button class="unite-btn" onclick="konuGetir(2)">📖 2. Ünite: Hücre ve Bölünmeler</button>
+                <button class="unite-btn" onclick="konuGetir(3)">📖 3. Ünite: Kuvvet ve Hareket</button>
+                <button class="unite-btn" onclick="konuGetir(4)">📖 4. Ünite: Maddenin Yapısı ve Özellikleri</button>
+                
+                <div id="icerikAlani">Lütfen yukarıdan öğrenmek istediğiniz konuyu seçin...</div>
+                
+                <a href="/" class="geri-btn">⬅️ Ana Sayfaya Dön</a>
+            </div>
+            <script>
+                const konular = {
+                    1: "<b>1. Ünite: Güneş Sistemi ve Ötesi</b><br><br>• <b>Güneş Sistemi:</b> İç (karasal) ve dış (gaz devi) gezegenlerin özellikleri, güneşe uzaklık sıralamaları.<br>• <b>Yıldızlar, Galaksiler ve Evren:</b> Yıldızların oluşumu, yaşam döngüsü, Samanyolu galaksisi ve ötesindeki yapılar.",
+                    2: "<b>2. Ünite: Hücre ve Bölünmeler</b><br><br>• <b>Hücre:</b> Bitki ve hayvan hücreleri arasındaki temel farklar, organellerin görevleri.<br>• <b>Mitoz Bölünme:</b> Vücut hücrelerinde gerçekleşen, büyüme, onarım ve gelişimi sağlayan bölünme evreleri.",
+                    3: "<b>3. Ünite: Kuvvet ve Hareket</b><br><br>• <b>Kuvvetin Hesaplanması:</b> Bileşke kuvvet (net kuvvet), zıt ve aynı yönlü kuvvetlerin dengelenmesi.<br>• <b>Sürat:</b> Yol, zaman ve sürat arasındaki matematiksel ilişkiler ve grafik yorumlama.",
+                    4: "<b>4. Ünite: Maddenin Yapısı ve Özellikleri</b><br><br>• <b>Atomun Yapısı:</b> Proton, nötron ve elektronların atomdaki yerleri ve yükleri.<br>• <b>Saf Madde ve Karışımlar:</b> Elementler, bileşikler, homojen ve heterojen karışımların özellikleri."
+                };
+                function konuGetir(no) {
+                    document.getElementById('icerikAlani').innerHTML = konular[no];
+                }
+            </script>
+        </body></html>
+    `);
+});
 
 app.get('/karakter-sec', (req, res) => {
     res.send(`
@@ -153,17 +198,65 @@ app.get('/karakter-sec', (req, res) => {
     `);
 });
 
+// 📚 Bir Kitaptan Alınmış Tam 50 Adet Çoktan Seçmeli Fen Bilimleri Sorusu (Ünite Bilgileri Dahil)
 const FEN_SORULARI = [
-    { soru: "Güneş'e en yakın olan gezegen hangisidir?", secenekler: ["Merkür", "Venüs", "Dünya", "Mars"], cevap: 0 },
-    { soru: "Halkasıyla bilinen en büyük gaz devi gezegen hangisidir?", secenekler: ["Jüpiter", "Satürn", "Uranüs", "Neptün"], cevap: 1 },
-    { soru: "Güneş sisteminin en sıcak gezegeni hangisidir?", secenekler: ["Merkür", "Venüs", "Mars", "Jüpiter"], cevap: 1 },
-    { soru: "Üzerinde sıvı su bulunduran ve yaşam olan tek gezegen hangisidir?", secenekler: ["Mars", "Venüs", "Dünya", "Neptün"], cevap: 2 },
-    { soru: "Kızıl Gezegen olarak bilinen gezegen hangisidir?", secenekler: ["Jüpiter", "Mars", "Satürn", "Merkür"], cevap: 1 },
-    { soru: "Güneş sisteminin en büyük gezegeni hangisidir?", secenekler: ["Satürn", "Jüpiter", "Uranüs", "Neptün"], cevap: 1 },
-    { soru: "Güneş'e en uzak olan gezegen hangisidir?", secenekler: ["Uranüs", "Neptün", "Satürn", "Jüpiter"], cevap: 1 },
-    { soru: "Güneş tutulmasında hangi gök cismi ortadadır?", secenekler: ["Dünya", "Güneş", "Ay", "Mars"], cevap: 2 },
-    { soru: "Ay tutulmasında hangi gök cismi ortadadır?", secenekler: ["Ay", "Dünya", "Güneş", "Venüs"], cevap: 1 },
-    { soru: "Güneş tutulması olayı ayın hangi evresinde gerçekleşir?", secenekler: ["Yeni Ay", "Dolunay", "İlk Dördün", "Son Dördün"], cevap: 0 }
+    // 1. Ünite: Güneş Sistemi ve Ötesi (1-13)
+    { unite: "1. Ünite: Güneş Sistemi ve Ötesi", soru: "Güneş'e en yakın olan gezegen hangisidir?", secenekler: ["Merkür", "Venüs", "Dünya", "Mars"], cevap: 0 },
+    { unite: "1. Ünite: Güneş Sistemi ve Ötesi", soru: "Halkasıyla bilinen en büyük gaz devi gezegen hangisidir?", secenekler: ["Jüpiter", "Satürn", "Uranüs", "Neptün"], cevap: 1 },
+    { unite: "1. Ünite: Güneş Sistemi ve Ötesi", soru: "Güneş sisteminin en sıcak gezegeni hangisidir?", secenekler: ["Merkür", "Venüs", "Mars", "Jüpiter"], cevap: 1 },
+    { unite: "1. Ünite: Güneş Sistemi ve Ötesi", soru: "Üzerinde sıvı su bulunduran ve yaşam olan tek gezegen hangisidir?", secenekler: ["Mars", "Venüs", "Dünya", "Neptün"], cevap: 2 },
+    { unite: "1. Ünite: Güneş Sistemi ve Ötesi", soru: "Kızıl Gezegen olarak bilinen gezegen hangisidir?", secenekler: ["Jüpiter", "Mars", "Satürn", "Merkür"], cevap: 1 },
+    { unite: "1. Ünite: Güneş Sistemi ve Ötesi", soru: "Güneş sisteminin en büyük gezegeni hangisidir?", secenekler: ["Satürn", "Jüpiter", "Uranüs", "Neptün"], cevap: 1 },
+    { unite: "1. Ünite: Güneş Sistemi ve Ötesi", soru: "Güneş'e en uzak olan gezegen hangisidir?", secenekler: ["Uranüs", "Neptün", "Satürn", "Jüpiter"], cevap: 1 },
+    { unite: "1. Ünite: Güneş Sistemi ve Ötesi", soru: "Güneş tutulmasında hangi gök cismi ortadadır?", secenekler: ["Dünya", "Güneş", "Ay", "Mars"], cevap: 2 },
+    { unite: "1. Ünite: Güneş Sistemi ve Ötesi", soru: "Ay tutulmasında hangi gök cismi ortadadır?", secenekler: ["Ay", "Dünya", "Güneş", "Venüs"], cevap: 1 },
+    { unite: "1. Ünite: Güneş Sistemi ve Ötesi", soru: "Güneş tutulması olayı ayın hangi evresinde gerçekleşir?", secenekler: ["Yeni Ay", "Dolunay", "İlk Dördün", "Son Dördün"], cevap: 0 },
+    { unite: "1. Ünite: Güneş Sistemi ve Ötesi", soru: "Ay tutulması olayı ayın hangi evresinde gerçekleşir?", secenekler: ["Yeni Ay", "Dolunay", "Hilal", "Şişkin Ay"], cevap: 1 },
+    { unite: "1. Ünite: Güneş Sistemi ve Ötesi", soru: "Aşağıdaki gezegenlerden hangisi karasal (iç) gezegenlerden biri değildir?", secenekler: ["Merkür", "Venüs", "Dünya", "Neptün"], cevap: 3 },
+    { unite: "1. Ünite: Güneş Sistemi ve Ötesi", soru: "Yıldızların doğduğu, gaz ve toz bulutlarından oluşan devasa yapılara ne ad verilir?", secenekler: ["Nebula (Bulutsu)", "Meteor", "Asteroid", "Kuyruklu Yıldız"], cevap: 0 },
+
+    // 2. Ünite: Hücre ve Bölünmeler (14-26)
+    { unite: "2. Ünite: Hücre ve Bölünmeler", soru: "Aşağıdakilerden hangisi bitki hücresinde bulunup hayvan hücresinde bulunmayan bir yapıdır?", secenekler: ["Çekirdek", "Hücre Zarı", "Hücre Duvarı (Çeperi)", "Sitoplazma"], cevap: 2 },
+    { unite: "2. Ünite: Güneş Sistemi ve Ötesi", soru: "Canlının yapı birimi aşağıdakilerden hangisidir?", secenekler: ["Doku", "Organ", "Hücre", "Sistem"], cevap: 2 },
+    { unite: "2. Ünite: Hücre ve Bölünmeler", soru: "Hücrenin enerji ihtiyacını karşılayan organel hangisidir?", secenekler: ["Mitokondri", "Ribozom", "Kloroplast", "Golgi Cisimciği"], cevap: 0 },
+    { unite: "2. Ünite: Hücre ve Bölünmeler", soru: "Protein sentezinden sorumlu olan küçük organel hangisidir?", secenekler: ["Koful", "Ribozom", "Lizozom", "Sentrozom"], cevap: 1 },
+    { unite: "2. Ünite: Hücre ve Bölünmeler", soru: "Bitkilerde fotosentez yapılarak besin üretilen organel hangisidir?", secenekler: ["Mitokondri", "Kloroplast", "Koful", "Endoplazmik Retikulum"], cevap: 1 },
+    { unite: "2. Ünite: Hücre ve Bölünmeler", soru: "Hücre içi sindirimden sorumlu, yaşlanmış organelleri yok eden kese şeklindeki organel hangisidir?", secenekler: ["Lizozom", "Koful", "Ribozom", "Çekirdekçik"], cevap: 0 },
+    { unite: "2. Ünite: Hücre ve Bölünmeler", soru: "Hücre bölünmesiyle ilgili olarak aşağıdakilerden hangisi mitoz bölünmenin özelliklerinden biridir?", secenekler: ["Kromozom sayısı yarıya iner", "İki yeni hücre oluşur", "Üreme hücrelerini oluşturur", "Çeşitlilik sağlar"], cevap: 1 },
+    { unite: "2. Ünite: Hücre ve Bölünmeler", soru: "Mitoz bölünme sonucunda oluşan yeni hücrelerin genetik yapısı ana hücreye göre nasıldır?", secenekler: ["Tamamen aynıdır", "Farklıdır", "Yarı yarıya farklıdır", "Mutasyonludur"], cevap: 0 },
+    { unite: "2. Ünite: Hücre ve Bölünmeler", soru: "İnsanlarda vücut hücrelerinin kromozom sayısı kaç tanedir?", secenekler: ["23", "46", "22", "44"], cevap: 1 },
+    { unite: "2. Ünite: Hücre ve Bölünmeler", soru: "Aşağıdakilerden hangisi mayoz bölünme ile oluşur?", secenekler: ["Deri hücresi", "Sperm ve Yumurta", "Karaciğer hücresi", "Kemik hücresi"], cevap: 1 },
+    { unite: "2. Ünite: Hücre ve Bölünmeler", soru: "Hücrede kalıtım materyalini (DNA) taşıyan yönetim merkezi neresidir?", secenekler: ["Sitoplazma", "Çekirdek", "Koful", "Hücre Zarı"], cevap: 1 },
+    { unite: "2. Ünite: Hücre ve Bölünmeler", soru: "Bitki hücrelerinde kofulun yapısı nasıldır?", secenekler: ["Küçük ve çok sayıda", "Büyük ve az sayıda", "Hiç yoktur", "Akışkandır"], cevap: 1 },
+    { unite: "2. Ünite: Hücre ve Bölünmeler", soru: "Tek hücreli canlılarda üreme veya çoğalma hangi bölünmeyle sağlanır?", secenekler: ["Mayoz", "Mitoz", "Döllenme", "Sindirim"], cevap: 1 },
+
+    // 3. Ünite: Kuvvet ve Hareket (27-38)
+    { unite: "3. Ünite: Kuvvet ve Hareket", soru: "Aynı yönlü iki kuvvet sırasıyla 12 N ve 8 N ise bileşke (net) kuvvet kaç Newton'dur?", secenekler: ["4 N", "20 N", "96 N", "1.5 N"], cevap: 1 },
+    { unite: "3. Ünite: Kuvvet ve Hareket", soru: "Zıt yönlü iki kuvvet 15 N ve 10 N ise bileşke kuvvetin büyüklüğü ve yönü nedir?", secenekler: ["25 N - Büyük olanın yönünde", "5 N - Büyük olanın yönünde", "5 N - Küçük olanın yönünde", "150 N - Sıfır"], cevap: 1 },
+    { unite: "3. Ünite: Kuvvet ve Hareket", soru: "Bileşke kuvvetin sıfır olduğu durumlarda cisimler hangi hareketi yapar?", secenekler: ["Dengelenmiş kuvvetlerin etkisindedir (Hızlanabilir veya durabilir)", "Kesinlikle durur", "Sürekli hızlanır", "Yavaşlar"], cevap: 0 },
+    { unite: "3. Ünite: Kuvvet and Hareket", soru: "Sürat biriminin uluslararası birim sistemindeki (SI) gösterimi hangisidir?", secenekler: ["m/s", "km/sa", "m/s²", "N/kg"], cevap: 0 },
+    { unite: "3. Ünite: Kuvvet ve Hareket", soru: "Bir araç 300 kilometrelik yolu 4 saatte aldığına göre bu aracın sürati kaç km/saat'tir?", secenekler: ["60", "75", "1200", "50"], cevap: 1 },
+    { unite: "3. Ünite: Kuvvet ve Hareket", soru: "Sabit süratle hareket eden bir aracın yol-zaman grafiği nasıl bir çizgi gösterir?", secenekler: ["Artan eğimli eğri", "Doğrusal (düzenli artan) bir doğru", "Yatay düz çizgi", "Azalan eğri"], cevap: 1 },
+    { unite: "3. Ünite: Kuvvet ve Hareket", soru: "Kuvvetin birimi nedir ve hangi harfle gösterilir?", secenekler: ["Joule - J", "Newton - N", "Watt - W", "Pascal - Pa"], cevap: 1 },
+    { unite: "3. Ünite: Kuvvet ve Hareket", soru: "Dinamometreler neyi ölçmek için kullanılır?", secenekler: ["Sürat", "Kütle", "Kuvvet", "Hacim"], cevap: 2 },
+    { unite: "3. Ünite: Kuvvet ve Hareket", soru: "Dinamometrelerin yapımında hangi maddelerin esneklik özelliğinden yararlanılır?", secenekler: ["Tahta ve Plastik", "Yay ve Esnek teller", "Cam ve Beton", "Bakır ve Demir"], cevap: 1 },
+    { unite: "3. Ünite: Kuvvet ve Hareket", soru: "Süratleri eşit olan iki araçtan yolculuk süresi daha kısa olan için ne söylenebilir?", secenekler: ["Daha kısa yol gitmiştir", "Daha uzun yol gitmiştir", "Daha yavaştır", "Aynı yolu gitmiştir"], cevap: 0 },
+    { unite: "3. Ünite: Kuvvet ve Hareket", soru: "Bir cismin birim zamanda aldığı yola ne denir?", secenekler: ["Kuvvet", "Sürat", "İvme", "Enerji"], cevap: 1 },
+    { unite: "3. Ünite: Kuvvet ve Hareket", soru: "Dengelenmemiş kuvvetlerin etkisindeki bir cisim için hangisi söylenebilir?", secenekler: ["Hızı sabittir", "Hızında veya yönünde değişiklik (hareket durumu değişimi) olur", "Durgun kalır", "Denge halindedir"], cevap: 1 },
+
+    // 4. Ünite: Maddenin Yapısı ve Özellikleri (39-50)
+    { unite: "4. Ünite: Maddenin Yapısı ve Özellikleri", soru: "Atomu oluşturan tanecikler arasında yer almayan hangisidir?", secenekler: ["Proton", "Nötron", "Elektron", "Fotoperiyot"], cevap: 3 },
+    { unite: "4. Ünite: Maddenin Yapısı ve Özellikleri", soru: "Protonun elektrik yükü nedir?", secenekler: ["Pozitif (+)", "Negatif (-)", "Yüksüz (Nötr)", "Değişken"], cevap: 0 },
+    { unite: "4. Ünite: Maddenin Yapısı ve Özellikleri", soru: "Elektronun elektrik yükü nedir?", secenekler: ["Pozitif (+)", "Negatif (-)", "Yüksüz", "Çift yönlü"], cevap: 1 },
+    { unite: "4. Ünite: Maddenin Yapısı ve Özellikleri", soru: "Atomun çekirdeğinde hangi tanecikler yer alır?", secenekler: ["Yalnız Elektronlar", "Proton ve Nötronlar", "Proton ve Elektronlar", "Yalnız Nötronlar"], cevap: 1 },
+    { unite: "4. Ünite: Maddenin Yapısı ve Özellikleri", soru: "Aşağıdakilerden hangisi bir saf madde çeşididir?", secenekler: ["Ayran", "Salata", "Element", "Hava"], cevap: 2 },
+    { unite: "4. Ünite: Maddenin Yapısı ve Özellikleri", soru: "Aynı cins atomlardan oluşan saf maddelere ne ad verilir?", secenekler: ["Bileşik", "Element", "Karışım", "Çözelti"], cevap: 1 },
+    { unite: "4. Ünite: Maddenin Yapısı ve Özellikleri", soru: "Farklı cins atomların belirli oranlarda birleşmesiyle oluşan ve kimyasal yollarla ayrıştırılan saf maddelere ne denir?", secenekler: ["Element", "Bileşik", "Heterojen karışım", "Alaşım"], cevap: 1 },
+    { unite: "4. Ünite: Maddenin Yapısı ve Özellikleri", soru: "Aşağıdakilerden hangisi bir bileşiktir?", secenekler: ["Demir (Fe)", "Su (H2O)", "Oksijen (O2)", "Bakır (Cu)"], cevap: 1 },
+    { unite: "4. Ünite: Maddenin Yapısı ve Özellikleri", soru: "İçerisinde her yerinde aynı özelliği gösteren karışımlara ne denir?", secenekler: ["Homojen Karışım (Çözelti)", "Heterojen Karışım", "Saf Madde", "Element"], cevap: 0 },
+    { unite: "4. Ünite: Maddenin Yapısı ve Özellikleri", soru: "Aşağıdakilerden hangisi heterojen bir karışımdır?", secenekler: ["Şekerli su", "Tuzlu su", "Zeytinyağlı su", "Kolonya"], cevap: 2 },
+    { unite: "4. Ünite: Maddenin Yapısı ve Özellikleri", soru: "Maddelerin tanecikli yapısı hakkında ilk bilimsel modeli ortaya atan kimdir?", secenekler: ["John Dalton", "Albert Einstein", "Isaac Newton", "Galileo"], cevap: 0 },
+    { unite: "4. Ünite: Maddenin Yapısı ve Özellikleri", soru: "Yoğunluk maddeler için nasıl bir özelliktir?", secenekler: ["Ayırt edici özelliktir", "Ortak özelliktir", "Değişken özelliktir", "Hiçbiri"], cevap: 0 }
 ];
 
 const HARITA_GENISLIK = 2000;
@@ -248,7 +341,8 @@ app.get('/oyun-alani', (req, res) => {
         <!DOCTYPE html><html><head><title>Fen Bilimleri Chest Arena</title><style>
             body { background:#0f0f0f; color:#fff; margin:0; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; font-family:sans-serif; overflow:hidden; }
             canvas { background:#181818; border:4px solid #FFD700; box-shadow:0 0 30px rgba(255,215,0,0.4); cursor: crosshair; }
-            .ui { margin-bottom:4px; font-size:16px; color:#FFD700; font-weight:bold; }
+            .ui { margin-bottom:2px; font-size:16px; color:#FFD700; font-weight:bold; }
+            .aktifUniteBildirim { font-size: 13px; color: #00ffcc; margin-bottom: 4px; font-weight: bold; background: rgba(0,255,204,0.1); padding: 3px 10px; border-radius: 6px; border: 1px solid #00ffcc; }
             .bilgi { font-size:12px; color:#aaa; margin-bottom:4px; }
             
             #muzikPaneli { position: fixed; top: 15px; right: 20px; background: rgba(20, 20, 20, 0.9); border: 2px solid #FFD700; padding: 8px 12px; border-radius: 10px; z-index: 1000; display: flex; align-items: center; gap: 8px; box-shadow: 0 0 15px rgba(255,215,0,0.3); }
@@ -259,9 +353,10 @@ app.get('/oyun-alani', (req, res) => {
             .panelKutusu { background: rgba(20, 20, 20, 0.9); border: 2px solid #FFD700; padding: 8px 12px; border-radius: 10px; box-shadow: 0 0 15px rgba(255,215,0,0.3); color: #FFD700; font-size: 13px; }
             #skorTablosuListesi { margin: 4px 0 0 0; padding-left: 15px; font-size: 11px; color: #fff; text-align: left; max-height: 80px; overflow-y: auto; }
 
-            #soruModal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(20, 20, 20, 0.95); border: 3px solid #FFD700; padding: 25px; border-radius: 15px; z-index: 10000; width: 450px; text-align: center; box-shadow: 0 0 50px rgba(255,215,0,0.5); }
-            #soruBaslik { font-size: 16px; color: #FFD700; margin-bottom: 15px; font-weight: bold; }
-            .secenekBtn { display: block; width: 100%; padding: 10px; margin: 8px 0; background: #333; color: #fff; border: 1px solid #FFD700; border-radius: 8px; cursor: pointer; font-size: 14px; transition: 0.2s; }
+            #soruModal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(20, 20, 20, 0.95); border: 3px solid #FFD700; padding: 25px; border-radius: 15px; z-index: 10000; width: 480px; text-align: center; box-shadow: 0 0 50px rgba(255,215,0,0.5); }
+            #soruKategoriEtiket { font-size: 11px; color: #00ffcc; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
+            #soruBaslik { font-size: 15px; color: #FFD700; margin-bottom: 15px; font-weight: bold; }
+            .secenekBtn { display: block; width: 100%; padding: 10px; margin: 8px 0; background: #333; color: #fff; border: 1px solid #FFD700; border-radius: 8px; cursor: pointer; font-size: 14px; transition: 0.2s; text-align: left; }
             .secenekBtn:hover { background: #FFD700; color: #000; font-weight: bold; }
 
             #adminSifreModal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15, 15, 15, 0.98); border: 3px solid #ff8c00; padding: 25px; border-radius: 15px; z-index: 30000; width: 350px; text-align: center; box-shadow: 0 0 50px rgba(255,140,0,0.5); font-family: monospace; }
@@ -282,7 +377,8 @@ app.get('/oyun-alani', (req, res) => {
             .kill-msg { background: rgba(0, 0, 0, 0.65); border-left: 4px solid #ff4757; color: #fff; padding: 6px 12px; font-size: 13px; font-weight: bold; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
         </style></head><body>
             <div class="ui">⭐ BİLGİ ÜSSÜ FEN BİLİMLERİ ARENA ⭐</div>
-            <div class="bilgi">Hareket: <b>W,A,S,D</b> | Ateş Et: <b>Sol Tık</b> | <a href="/karakter-sec" style="color:#ff4757; text-decoration:none;">Karakter Değiştir</a></div>
+            <div id="aktifUniteGosterge" class="aktifUniteBildirim">🎯 Soru Havuzu: Tüm Kitap Üniteleri (50 Soru)</div>
+            <div class="bilgi">Hareket: <b>W,A,S,D</b> | Ateş Et: <b>Sol Tık</b> | <a href="/karakter-sec" style="color:#ff4757; text-decoration:none;">Karakter Değiştir</a> | <a href="/" style="color:#0096ff; text-decoration:none;">Ana Menü</a></div>
             
             <div id="ustPanel">
                 <div class="panelKutusu">
@@ -305,7 +401,7 @@ app.get('/oyun-alani', (req, res) => {
                 <h3>🔒 YÖNETİCİ ŞİFRESİ GEREKLİ</h3>
                 <p style="font-size:12px; color:#aaa;">Hile konsolunu açmak için şifreyi gir:</p>
                 <input type="password" id="sifreInput" placeholder="Şifre" autocomplete="off">
-                <button class="secenekBtn" onclick="sifreyiKontrolEt()" style="background:#ff8c00; color:#000; font-weight:bold;">Giriş Yap</button>
+                <button class="secenekBtn" onclick="sifreyiKontrolEt()" style="background:#ff8c00; color:#000; font-weight:bold; text-align:center;">Giriş Yap</button>
             </div>
 
             <div id="adminKonsol">
@@ -315,6 +411,7 @@ app.get('/oyun-alani', (req, res) => {
             </div>
 
             <div id="soruModal">
+                <div id="soruKategoriEtiket">Ünite Bilgisi</div>
                 <div id="soruBaslik">Soru Yükleniyor...</div>
                 <div id="seceneklerDiv"></div>
             </div>
@@ -366,6 +463,7 @@ app.get('/oyun-alani', (req, res) => {
                 const isim = sessionStorage.getItem('oyuncuIsim') || 'Savaşçı';
                 const benimAvatarim = sessionStorage.getItem('oyuncuAvatar') || '';
 
+                // MEB ve Bulut Uyumlu Otomatik Socket Bağlantısı
                 const socket = io({ query: { isim: isim }, forceNew: true, transports: ['websocket', 'polling'] });
                 socket.on('connect', () => { socket.emit('avatarGuncelle', benimAvatarim); });
 
@@ -510,11 +608,9 @@ app.get('/oyun-alani', (req, res) => {
                     if (liste) {
                         liste.innerHTML = '';
                         let oyuncuDizi = Object.values(data.players).sort((a, b) => b.skor - a.skor);
-                        
-                        // Hata alan döngü düzeltildi: Fonksiyon parametresi (p, index) olarak tamamen güvenli hale getirildi.
-                        oyuncuDizi.slice(0, 5).forEach(function(p, index) {
+                        oyuncuDizi.slice(0, 5).forEach((p, index) => {
                             let li = document.createElement('li');
-                            li.innerHTML = (index + 1) + '. ' + p.isim + ': <b style="color:#FFD700;">' + p.skor + '⭐</b>';
+                            li.innerHTML = \`\${index + 1}. \${p.isim}: <b style="color:#FFD700;">\${p.skor}⭐</b>\`;
                             liste.appendChild(li);
                         });
                     }
@@ -525,7 +621,14 @@ app.get('/oyun-alani', (req, res) => {
                 socket.on('soruGoster', (veri) => {
                     soruAcik = true;
                     document.getElementById('soruModal').style.display = 'block';
+                    document.getElementById('soruKategoriEtiket').innerText = "📌 " + veri.soruData.unite;
                     document.getElementById('soruBaslik').innerText = "📦 " + veri.soruData.soru;
+
+                    // Üst alandaki aktif ünite göstergesini de güncelleyelim
+                    let uniteGostergeEl = document.getElementById('aktifUniteGosterge');
+                    if (uniteGostergeEl) {
+                        uniteGostergeEl.innerText = "🎯 Gelen Soru Ünitesi: " + veri.soruData.unite;
+                    }
 
                     let seceneklerDiv = document.getElementById('seceneklerDiv');
                     seceneklerDiv.innerHTML = '';
@@ -533,7 +636,7 @@ app.get('/oyun-alani', (req, res) => {
                     veri.soruData.secenekler.forEach((sec, index) => {
                         let btn = document.createElement('button');
                         btn.className = 'secenekBtn';
-                        btn.innerText = sec;
+                        btn.innerText = (index + 1) + ") " + sec;
                         btn.onclick = () => {
                             socket.emit('cevapVer', { chestId: veri.chestId, secilenIndex: index, dogruCevap: veri.soruData.cevap });
                             document.getElementById('soruModal').style.display = 'none';
@@ -556,7 +659,7 @@ app.get('/oyun-alani', (req, res) => {
                     const chatGecmisi = document.getElementById('chatGecmisi');
                     const div = document.createElement('div');
                     div.className = 'chat-satir';
-                    div.innerHTML = '<b style="color: #FFD700;">' + data.isim + ':</b> ' + data.mesaj;
+                    div.innerHTML = \`<b style="color: #FFD700;">\${data.isim}:</b> \${data.mesaj}\`;
                     chatGecmisi.appendChild(div);
                     if (chatGecmisi.children.length > 6) chatGecmisi.children[0].remove();
                     chatGecmisi.scrollTop = chatGecmisi.scrollHeight;
@@ -571,15 +674,17 @@ app.get('/oyun-alani', (req, res) => {
                     let kameraX = 0, kameraY = 0;
                     if (ben) {
                         kameraX = Math.max(0, Math.min(ben.x - canvas.width / 2, ${HARITA_GENISLIK} - canvas.width));
-                        kameraY = Math.max(0, Math.min(ben.y - canvas.height / 2, ${HARITA_YUKSEKLIK} - canvas.height));
+                        kameraY = Math.max(0, Math.min(ben.y - canvas.height / 2, 1500 - canvas.height));
                     }
 
                     ctx.save();
                     ctx.translate(-kameraX, -kameraY);
 
+                    // Harita Arka Planı
                     ctx.fillStyle = '#1e1e1e';
                     ctx.fillRect(0, 0, ${HARITA_GENISLIK}, ${HARITA_YUKSEKLIK});
 
+                    // Bölgeleri Çiz
                     for (let b of oyunVerisi.bolgeler) {
                         ctx.fillStyle = b.renk;
                         ctx.fillRect(b.x, b.y, b.w, b.h);
@@ -594,6 +699,7 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.fillText("📍 " + b.isim, b.x + b.w / 2, b.y + 50);
                     }
 
+                    // Duvarları Çiz
                     for (let d of oyunVerisi.walls) {
                         ctx.fillStyle = '#2c3e50';
                         ctx.fillRect(d.x, d.y, d.w, d.h);
@@ -602,6 +708,7 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.strokeRect(d.x, d.y, d.w, d.h);
                     }
 
+                    // Sandıkları Çiz
                     for (let c of oyunVerisi.chests) {
                         if (!c.aktif) continue;
                         if (chestImg.complete && chestImg.naturalWidth !== 0) {
@@ -612,6 +719,7 @@ app.get('/oyun-alani', (req, res) => {
                         }
                     }
 
+                    // Mermileri Çiz
                     for (let m of oyunVerisi.bullets) {
                         ctx.fillStyle = '#ff4757';
                         ctx.beginPath();
@@ -621,6 +729,7 @@ app.get('/oyun-alani', (req, res) => {
                         ctx.stroke();
                     }
 
+                    // Oyuncuları Çiz
                     for (let id in oyunVerisi.players) {
                         let p = oyunVerisi.players[id];
                         if (p.gizli && id !== benimId) continue;
